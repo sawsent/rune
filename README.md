@@ -1,22 +1,23 @@
-# rune
+# Rune
 
-Are you tired of storing passwords and API keys in plain text files? **rune** is a terminal-based password manager for developers that lets you securely store, retrieve, update, and manage secrets—all encrypted with a key you provide. Each secret can have its own key, and nothing is ever stored on disk except the encrypted data.
+Are you tired of storing passwords and API keys in plain text files? **Rune** is a simple, developer-focused terminal vault for securely storing secrets. Each secret is encrypted with a key you provide — nothing is ever stored unencrypted, and no master password is saved.
+
+Rune is built with a workflow developers expect: fast commands, helpful prompts, clipboard integration, and flexible configuration.
 
 ---
 
 ## Features
 
-- Securely store passwords and API keys with per-secret keys.
-- Retrieve secrets by providing the key used for encryption.
-- Update or delete stored secrets.
-- List all stored entries.
-- All data is stored locally in an encrypted file — no master password is ever saved.
+- 🔐 Per-secret encryption keys  
+- 🏷️ Add, update, delete, and list secrets  
+- 📋 Retrieve and auto-copy secrets to your clipboard  
+- 🛠️ Configurable encryption mode, storage mode, and file location  
+- ❌ Keys are *never stored* — lose the key, lose the secret  
+- ✨ Interactive prompts for missing options  
 
 ---
 
 ## Installation
-
-Install Rune via pip:
 
 ```bash
 pip install rune
@@ -26,75 +27,135 @@ pip install rune
 
 ## Usage
 
-### Create a new secret
+All commands prompt for missing values — names, secrets, and keys — making them easy to use interactively.
+
+### Add a Secret
 
 ```bash
-rune create -n <name> -p <password> -k <key>
+rune add --name <name> --secret <secret> --key <key>
 ```
 
-- `-n` : Name of the secret (e.g., `github`, `aws`).
-- `-p` : Password or API key.
-- `-k` : Key used to encrypt this secret. You must provide this key to decrypt later.
+If any option is omitted, Rune will prompt:
+
+- **Name**
+- **Secret** (input hidden)
+- **Encryption key** (input hidden; must be remembered)
+
+**Example:**
+
+```bash
+rune add -n github -s myToken123 -k myKey
+```
 
 ---
 
-### Retrieve a secret
+### Retrieve a Secret
 
 ```bash
-rune get -n <name> -k <key>
+rune get --name <name> --key <key>
 ```
 
-- Returns the decrypted password associated with `<name>`.
-- You must provide the same key that was used to encrypt the secret.
+- Secret is automatically copied to your clipboard.
+- Add `--show` to also display it in the terminal.
+
+**Example:**
+
+```bash
+rune get -n github -k myKey --show
+```
 
 ---
 
-### Update a secret
+### Update a Secret
 
 ```bash
-rune update -n <name> -p <new_password> -k <key>
+rune update --name <name> --secret <new_secret> --key <key>
 ```
-
-- Update a stored secret. The same key must be provided to authorize the update.
 
 ---
 
-### Delete a secret
+### Delete a Secret
 
 ```bash
-rune delete -n <name> -k <key>
+rune delete --name <name>
 ```
 
-- Delete a stored secret. The key must match the one used for encryption.
+You will be prompted for the name if omitted.
 
 ---
 
-### List all secrets
+### List All Secrets
 
 ```bash
 rune list
 ```
 
-- Lists all stored secret names. Keys are not required for listing, but are required for retrieving the actual secret.
+Secrets are shown in a numbered list:
+
+```
+[1] github
+[2] aws
+[3] database
+```
 
 ---
 
-## Security
+## Configuration
 
-- Secrets are encrypted on disk with the key you provide.
-- Keys are never stored — you must type the key every time you create, retrieve, update, or delete a secret.
-- Different secrets can use different keys for added flexibility and security.
-
----
-
-## Example
+Rune allows you to configure encryption mode, storage mode, and the secrets file location.
 
 ```bash
-# Store a new secret
-rune create -n github -p myGitHubToken123 -k mySecretKey
+rune config --encryption <mode> --storage-mode <mode> --secrets-file <path>
+```
 
-# Retrieve it later
-rune get -n github -k mySecretKey
+Supported values:
+
+- `--encryption`: `no-encryption`
+- `--storage-mode`: `local`
+- `--secrets-file`: Any file path (e.g., `~/.secrets.json`)
+
+**Example:**
+
+```bash
+rune config -e no-encryption -s local -f ~/.rune_secrets.json
+```
+
+Run:
+
+```bash
+rune config -h
+```
+
+for full help.
+
+---
+
+## Security Notes
+
+- Each secret is encrypted with *its own key*.
+- Keys are never stored — you must provide the correct key to decrypt or modify a secret.
+- Forget the key → the secret is permanently lost.
+- Secrets are stored locally in an encrypted file.
+
+---
+
+## Example Workflow
+
+```bash
+# Add
+rune add -n stripe -s sk_live_abc -k myStrongKey
+
+# Retrieve (copied to clipboard)
+rune get -n stripe -k myStrongKey
+
+# Update
+rune update -n stripe -s newKey -k myStrongKey
+
+# Delete
+rune delete -n stripe
+
+# List
+rune list
 ```
 
 ---

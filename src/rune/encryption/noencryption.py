@@ -1,6 +1,5 @@
 from rune.encryption.base import Encrypter
 
-
 class NoEncryption(Encrypter):
     def encrypt(self, secret: str, key: str) -> str:
         """

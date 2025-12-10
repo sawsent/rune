@@ -1,9 +1,15 @@
-from typing import Annotated, Optional, Tuple
+from typing import Annotated, Literal, Optional, Tuple
 import typer
+import pyperclip
 
 from rune.internal.add import add_secret
+from rune.internal.delete import delete_secret
+from rune.internal.get import get_secret
 from rune.internal.listsecrets import list_secrets
-from rune.utils.settings import ensure_settings_exist
+from rune.internal.update import update_secret
+from rune.models.result import Success
+from rune.models.secret import Secret
+from rune.utils.settings import ensure_secrets_exist, ensure_settings_exist, update_settings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -37,7 +43,12 @@ def add(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HE
     Add a secret to the rune vault.
     """
     name, secret, key = enrich_arguments(name=name, secret=secret, key=key)
-    add_secret(name, secret, key)
+    result = add_secret(name, secret, key)
+
+    if result.is_success():
+        print(f"Stored new secret {name}")
+    else:
+        print(result.failure_reason())
     
 
 @app.command()
@@ -46,7 +57,11 @@ def delete(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME
     Removes a secret from the rune vault.
     """
     name, _, _ = enrich_arguments(name=name)
-    print(name)
+    result = delete_secret(name)
+    if result.is_success() is None:
+        print(f"Deleted secret {name}")
+    else:
+        print(result.failure_reason())
 
 @app.command()
 def update(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
@@ -56,28 +71,72 @@ def update(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME
     Update a secret in the rune vault.
     """
     name, secret, key = enrich_arguments(name=name, secret=secret, key=key)
-    print(name)
-    print(secret)
-    print(key)
+    result = update_secret(name, secret, key)
+    if result.is_success():
+        print(f"Updated secret {name}")
+    else:
+        print(result.failure_reason())
+
+
 
 @app.command()
 def get(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-        key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None):
+        key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
+        show_secret: Annotated[bool, typer.Option("--show", help="Display the secret to the terminal")] = False):
     """
     Retreive a secret from the rune vault.
+
+    Will copy it directly to the clipboard.
+    Use --show to also show it to the terminal.
     """
     name, _, key = enrich_arguments(name=name, key=key)
-    print(name)
-    print(key)
+    result = get_secret(name, key)
+
+    v = result.value()
+    if result.is_success() and v is not None:
+        pyperclip.copy(v)
+        print("Secret copied to clipboard")
+        if show_secret:
+            print(f"Secret: {v}")
+    else:
+        print(result.failure_reason())
 
 @app.command()
 def list():
     """
     Lists all secret names from the rune vault.
     """
-    list_secrets()
+    result = list_secrets()
+
+    v = result.value()
+    if result.is_success() and v is not None:
+        for i, s in enumerate(v):
+            print(f"[{i + 1}] {s.name}")
+    else:
+        print("Unable to retreive secrets")
+
+@app.command()
+def config(encryption: Annotated[Optional[Literal["no-encryption"]], typer.Option("--encryption", "-e", help="The type of encryption.")] = None,
+           storage_mode: Annotated[Optional[Literal["local"]], typer.Option("--storage-mode", "-s", help="Storage mode.")] = None,
+           secrets_location: Annotated[Optional[str], typer.Option("--secrets-file", "-f", help="Where to store secrets (Ex: ~/.secrets.json).")] = None):
+    """
+    Configure rune.
+
+    Use rune config -h for more help.
+    """
+
+    if all([(x is None) for x in [encryption, storage_mode, secrets_location]]):
+        print("Please specify at least one option to configure")
+        return
+
+    result = update_settings(encryption=encryption, storage_mode=storage_mode, storage_file=secrets_location)
+    if result.is_success():
+        print(result.value())
+    else:
+        print(result.failure_reason())
 
 def main():
     ensure_settings_exist()
+    ensure_secrets_exist()
     app()
 
