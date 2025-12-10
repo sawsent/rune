@@ -7,9 +7,7 @@ from rune.internal.delete import delete_secret
 from rune.internal.get import get_secret
 from rune.internal.listsecrets import list_secrets
 from rune.internal.update import update_secret
-from rune.models.result import Success
-from rune.models.secret import Secret
-from rune.utils.settings import ensure_secrets_exist, ensure_settings_exist, update_settings
+from rune.utils.settings import ensure_secrets_exist, ensure_settings_exist, get_secrets_path, get_settings_path, update_settings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -19,7 +17,7 @@ KEY_HELP = "Encryption key (will be prompted for if not provided)"
 
 NAME_PROMPT = "The name of the secret"
 SECRET_PROMPT = "The secret"
-KEY_PROMPT = "The encryption key for this secret (REMEMBER THIS OR YOUR SECRET WILL BE LOST)"
+KEY_PROMPT = "The encryption key for this secret"
 
 def enrich_arguments(name: Optional[str] = "",
                      secret: Optional[str] = "",
@@ -110,13 +108,15 @@ def list():
 
     v = result.value()
     if result.is_success() and v is not None:
+        if len(v) == 0:
+            print("No secrets yet.")
         for i, s in enumerate(v):
             print(f"[{i + 1}] {s.name}")
     else:
-        print("Unable to retreive secrets")
+        print(f"Unable to retreive secrets. Cause: {result.failure_reason()}")
 
 @app.command()
-def config(encryption: Annotated[Optional[Literal["no-encryption"]], typer.Option("--encryption", "-e", help="The type of encryption.")] = None,
+def config(encryption: Annotated[Optional[Literal["no-encryption", "aesgcm"]], typer.Option("--encryption", "-e", help="The type of encryption.")] = None,
            storage_mode: Annotated[Optional[Literal["local"]], typer.Option("--storage-mode", "-s", help="Storage mode.")] = None,
            secrets_location: Annotated[Optional[str], typer.Option("--secrets-file", "-f", help="Where to store secrets (Ex: ~/.secrets.json).")] = None):
     """
@@ -134,6 +134,14 @@ def config(encryption: Annotated[Optional[Literal["no-encryption"]], typer.Optio
         print(result.value())
     else:
         print(result.failure_reason())
+
+@app.command()
+def whereis():
+    """
+    Show the location of the settings file and the secrets file
+    """
+    print(f"settings: {get_settings_path()}")
+    print(f"secrets:  {get_secrets_path()}")
 
 def main():
     ensure_settings_exist()

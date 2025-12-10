@@ -7,7 +7,7 @@ from rune.models.result import Result, Success
 
 def default_settings(config_path) -> Dict: 
     return {
-        "encryption": "no-encryption",
+        "encryption": "aesgcm",
         "storage": {
             "mode": "local",
             "file": os.path.join(config_path, "secrets.json")

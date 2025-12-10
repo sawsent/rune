@@ -1,15 +1,40 @@
 [project]
 name = "rune"
-version = "0.0.1"
-description = "Rune is a terminal-based password manager for developers. Store, retrieve, update, and manage passwords and API keys securely with per-secret encryption keys — no master password is ever stored, and everything is encrypted locally."
-authors = [{ name="sawsent" }]
+version = "0.1.0"
+description = "Rune is a terminal-based password manager for developers. Store, retrieve, update, and manage secrets securely and easily."
+authors = [{ name = "sawsent" }]
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+
+# Runtime dependencies installed when someone `pip install rune`
+dependencies = [
+    "typer>=0.12",
+    "pyperclip>=1.8",
+    "platformdirs>=4.0",
+    "cryptography>=41.0",
+]
+
+keywords = ["password", "cli", "encryption", "secrets", "developer-tools", "security"]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: Apache Software License",
+    "Environment :: Console",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Utilities",
+]
 
 [project.scripts]
 rune = "rune.cli:main"
 
 [build-system]
-requires = ["setuptools", "typer", "pyperclip", "platformdirs"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/sawsent/rune"
+Repository = "https://github.com/sawsent/rune"
+Issues = "https://github.com/sawsent/rune/issues"
 

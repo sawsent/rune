@@ -58,7 +58,7 @@ class LocalJsonStorageManager(StorageManager):
     def store_secrets(self, secrets: Dict[str, Secret]) -> bool:
         try:
             with open(self.__secrets_file_path, "w") as f:
-                to_dump = {name: {"ciphertext": secret.ciphertext, "timestamp": secret.timestamp} for name, secret in secrets.items()}
+                to_dump = {name: {"data": secret.data, "timestamp": secret.timestamp} for name, secret in secrets.items()}
                 dump(to_dump, f, indent=4)
                 return True
         except:
@@ -69,9 +69,9 @@ class LocalJsonStorageManager(StorageManager):
         try:
             with open(self.__secrets_file_path, "r") as f:
                 d = load(f)
-                return { k: Secret(k, v["ciphertext"], v["timestamp"]) for k, v in d.items() }
+                return { k: Secret(k, v["data"], v["timestamp"]) for k, v in d.items() }
         except:
-            raise NotFoundError(f"Settings file at {self.__secrets_file_path} not found")
+            raise NotFoundError(f"Secrets file at {self.__secrets_file_path} not found")
 
 
 

@@ -1,4 +1,6 @@
 from rune.exception.notfounderror import NotFoundError
+from rune.exception.wrongencryption import WrongEncryptionMode
+from rune.exception.wrongkey import WrongKeyUsed
 from rune.models.result import Result, Success, Failure
 from rune.storage import factory as StorageManagerFactory
 from rune.encryption import factory as EncrypterFactory
@@ -17,11 +19,17 @@ def get_secret(name: str, key: str) -> Result[str]:
     try:
         secret = storage.retreive_ciphertext(name)
         if secret is not None:
-            decrypted = encrypter.decrypt(secret.ciphertext, key)
-            return Success(decrypted)
+            try:
+                decrypted = encrypter.decrypt(secret.data, key)
+                return Success(decrypted)
+            except WrongEncryptionMode as err:
+                return Failure(err.message)
+            except WrongKeyUsed as err:
+                return Failure(err.message)
         else:
             return Failure(f"Secret '{name}' does not exist.")
 
     except NotFoundError as err:
         return Failure(err.message)
+
 
