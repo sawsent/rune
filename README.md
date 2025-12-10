@@ -1,166 +1,203 @@
-# Rune
+# Rune — Encrypted Local Secret Vault (CLI)
 
-Are you tired of storing passwords and API keys in plain text files? **Rune** is a simple, developer-focused terminal vault for securely storing secrets. Each secret is encrypted with a key you provide — nothing is ever stored unencrypted, and no master password is saved.
-
-Rune is built with a workflow developers expect: fast commands, helpful prompts, clipboard integration, and flexible configuration.
-
----
-
-## Features
-
-- 🔐 Per-secret encryption keys  
-- 🏷️ Add, update, delete, and list secrets  
-- 📋 Retrieve and auto-copy secrets to your clipboard  
-- 🛠️ Configurable encryption mode, storage mode, and file location  
-- ❌ Keys are *never stored* — lose the key, lose the secret  
-- ✨ Interactive prompts for missing options  
+Rune is a tiny, dependency-light CLI tool for storing secrets locally on your machine.
+Secrets are organized by name and optional namespaces, and can be copied to clipboard securely without printing them to the terminal.
 
 ---
 
-## Installation
+## **Features**
+- Store secrets with any number of fields (`host`, `user`, `password`, etc.)
+- Organize secrets in namespaces (`db/prod/mydb`)
+- AES-GCM encryption (or plaintext mode)
+- Secure prompts (values are hidden)
+- Retrieve secrets interactively
+- Copy secrets directly to the clipboard without revealing them
+- Minimal configuration
+- Simple JSON-based storage
 
-```bash
+---
+
+## **Installation**
+
+```sh
 pip install rune
 ```
 
 ---
 
-## Usage
+## **Basic Usage**
 
-All commands prompt for missing values — names, secrets, and keys — making them easy to use interactively.
-
-### Add a Secret
-
-```bash
-rune add --name <name> --secret <secret> --key <key>
+### **Add a secret**
+```sh
+rune add -n db/prod/mydb -f host,port,user,password
 ```
 
-If any option is omitted, Rune will prompt:
+You will be prompted *securely* for each field value and for the encryption key (unless provided).
 
-- **Name**
-- **Secret** (input hidden)
-- **Encryption key** (input hidden; must be remembered)
+---
 
-**Example:**
+## **Names & Namespaces**
 
-```bash
-rune add -n github -s myToken123 -k myKey
+You can provide namespaces using slashes:
+
+```
+db/prod/mydb
+└─ namespace: db/prod
+└─ name:      mydb
+```
+
+Rune automatically splits these internally.
+
+---
+
+## **Commands**
+
+### `add`
+Add a new secret.
+
+```sh
+rune add -f field1,field2,... [-n name] [-k key]
+```
+
+Example:
+
+```sh
+rune add -f username,password -n github/personal
 ```
 
 ---
 
-### Retrieve a Secret
+### `get`
+Retrieve a secret (copies to clipboard).
 
-```bash
-rune get --name <name> --key <key>
+```sh
+rune get -n github/personal
 ```
 
-- Secret is automatically copied to your clipboard.
-- Add `--show` to also display it in the terminal.
+This **does NOT print the secret** unless you add:
 
-**Example:**
+```sh
+--show
+```
 
-```bash
-rune get -n github -k myKey --show
+Example:
+
+```sh
+$ rune get -n github/personal
+[1] - username
+[2] - password
+Select field to copy (q to cancel):
+```
+
+Pick a number, and that field is copied to the clipboard.
+
+---
+
+### `update`
+Modify an existing secret.
+
+```sh
+rune update -f user,password -n github/personal
+```
+
+Only the specified fields are updated.
+
+---
+
+### `delete`
+Delete a secret.
+
+```sh
+rune delete -n github/personal
 ```
 
 ---
 
-### Update a Secret
+### `ls`
+List all secrets.
 
-```bash
-rune update --name <name> --secret <new_secret> --key <key>
+```sh
+rune ls
+```
+
+Example output:
+
+```
+[1] db/prod/mydb
+[2] github/personal
+[3] redis/dev/cache
+```
+
+#### **Interactive Mode**
+
+```sh
+rune ls -i
+```
+
+Lets you select an entry and directly open it via `get`.
+
+---
+
+### `config`
+Configure Rune’s behavior.
+
+```sh
+rune config [--encryption aesgcm|no-encryption] [--storage-mode local] [--secrets-file path]
+```
+
+Examples:
+
+Set encryption mode:
+
+```sh
+rune config -e aesgcm
+```
+
+Change secrets location:
+
+```sh
+rune config -f ~/.mysecrets.json
 ```
 
 ---
 
-### Delete a Secret
+### `whereis`
+Display paths to the settings file and secrets file:
 
-```bash
-rune delete --name <name>
+```sh
+rune whereis
 ```
 
-You will be prompted for the name if omitted.
-
----
-
-### List All Secrets
-
-```bash
-rune list
-```
-
-Secrets are shown in a numbered list:
+Example output:
 
 ```
-[1] github
-[2] aws
-[3] database
+settings: /home/user/.config/rune/settings.json
+secrets:  /home/user/.local/share/rune/secrets.json
 ```
 
 ---
 
-## Configuration
+## **Clipboard Behavior**
+Rune uses `pyperclip` to copy retrieved secrets directly to your clipboard.
 
-Rune allows you to configure encryption mode, storage mode, and the secrets file location.
-
-```bash
-rune config --encryption <mode> --storage-mode <mode> --secrets-file <path>
-```
-
-Supported values:
-
-- `--encryption`: `no-encryption`, `aesgcm`
-- `--storage-mode`: `local`
-- `--secrets-file`: Any file path (e.g., `~/.secrets.json`)
-
-**Example:**
-
-```bash
-rune config -e no-encryption -s local -f ~/.rune_secrets.json
-```
-
-Run:
-
-```bash
-rune config -h
-```
-
-for full help.
+- Nothing is displayed unless `--show` is used.
+- You must select the field to copy.
+- Copying is interactive to avoid accidental exposure.
 
 ---
 
-## Security Notes
+## **Storage**
+Rune stores:
 
-- Each secret is encrypted with *its own key*.
-- Keys are never stored — you must provide the correct key to decrypt or modify a secret.
-- Forget the key → the secret is permanently lost.
-- Secrets are stored locally in an encrypted file.
+- encrypted (or plaintext) secrets  
+- user configuration (settings)
 
----
-
-## Example Workflow
-
-```bash
-# Add
-rune add -n stripe -s sk_live_abc -k myStrongKey
-
-# Retrieve (copied to clipboard)
-rune get -n stripe -k myStrongKey
-
-# Update
-rune update -n stripe -s newKey -k myStrongKey
-
-# Delete
-rune delete -n stripe
-
-# List
-rune list
-```
+in JSON files in your user directory.  
+Use `rune whereis` to locate them.
 
 ---
 
-## License
-
-Apache 2.0 License
+## **License**
+Apache 2.0.  
+See `LICENSE` file.
 

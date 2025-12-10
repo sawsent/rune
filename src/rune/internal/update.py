@@ -27,13 +27,21 @@ def update_secret(name: str, fields: Dict[str, str], key: str, namespace: str = 
         return Failure(f"You have to use the same key to update a secret.")
 
     encrypter = EncryptionFactory.get_configured_encrypter()
-    encrypted_fields = {name: encrypter.encrypt(secret, key) for name, secret in fields.items()}
+    provided_encrypted_fields = {name: encrypter.encrypt(secret, key) for name, secret in fields.items()}
+
+    encrypted_fields = {}
+    for name, f in original_secret.fields.items():
+        encrypted_fields[name] = provided_encrypted_fields.get(name) or f
+
+    for name, f in provided_encrypted_fields.items():
+        if name not in original_secret.fields:
+            encrypted_fields[name] = f
+
     model = original_secret.update(
         algorithm = encrypter._encryption_algorithm,
         fields = encrypted_fields
     )
     try:
-        
         if storage.store_ciphertext(model):
             return Success()
         else:

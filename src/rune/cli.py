@@ -1,4 +1,4 @@
-from typing import Annotated, Dict, List, Literal, Optional, Tuple
+from typing import Annotated, Dict, Literal, Optional, Tuple
 import typer
 import pyperclip
 
