@@ -1,0 +1,15 @@
+[project]
+name = "rune"
+version = "0.0.1"
+description = "Rune is a terminal-based password manager for developers. Store, retrieve, update, and manage passwords and API keys securely with per-secret encryption keys — no master password is ever stored, and everything is encrypted locally."
+authors = [{ name="sawsent" }]
+readme = "README.md"
+requires-python = ">=3.7"
+
+[project.scripts]
+rune = "rune.cli:main"
+
+[build-system]
+requires = ["setuptools", "typer", "pyperclip", "platformdirs"]
+build-backend = "setuptools.build_meta"
+
