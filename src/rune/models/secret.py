@@ -67,7 +67,9 @@ class Secret:
             tags = tags or self.tags,
             metadata = metadata or self.metadata,
             updated_at = datetime.now(),
-            version = version or self.version
+            version = version or self.version,
+            id = self.id,
+            created_at = self.created_at
         )
 
     @property
