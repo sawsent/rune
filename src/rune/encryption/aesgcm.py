@@ -1,6 +1,5 @@
 import os
 import base64
-from typing import Dict
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -8,8 +7,17 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from rune.encryption.base import Encrypter
 from rune.exception.wrongencryption import WrongEncryptionMode
 from rune.exception.wrongkey import WrongKeyUsed
+from rune.models.secret import SecretField
 
 class AESGCMEncrypter(Encrypter):
+
+    @classmethod
+    def encryption_algorithm(cls) -> str:
+        return "aesgcm"
+
+    def __init__(self) -> None:
+        self._encryption_algorithm = self.encryption_algorithm()
+
     def derive_key(self, password: str, salt: bytes) -> bytes:
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
@@ -20,7 +28,7 @@ class AESGCMEncrypter(Encrypter):
         return kdf.derive(password.encode())
 
 
-    def encrypt(self, secret: str, key: str) -> Dict:
+    def encrypt(self, secret: str, key: str, **kwargs) -> SecretField:
         """
         Encrypt a secret using a password-based key.
         Returns a dictionary suitable for JSON storage.
@@ -33,24 +41,23 @@ class AESGCMEncrypter(Encrypter):
 
         ciphertext = aesgcm.encrypt(nonce, secret.encode(), None)
 
-        return {
-            "mode": self.encryption_mode,
-            "salt": base64.b64encode(salt).decode(),
-            "nonce": base64.b64encode(nonce).decode(),
-            "ciphertext": base64.b64encode(ciphertext).decode(),
-        }
+        return SecretField(
+            ciphertext=base64.b64encode(ciphertext).decode("utf-8"),
+            salt=base64.b64encode(salt).decode("utf-8"),
+            nonce=base64.b64encode(nonce).decode("utf-8"),
+            algorithm=self._encryption_algorithm
+        )
 
-
-    def decrypt(self, secret: Dict, key: str) -> str:
+    def decrypt(self, secret: SecretField, key: str, **kwargs) -> str:
         """
         Decrypt a secret previously encrypted by encrypt().
         """
-        if self.encryption_mode != secret["mode"]:
-            raise WrongEncryptionMode(f"Secret was encrypted with mode {secret["mode"]}. Please use it to decrypt.")
+        if self._encryption_algorithm != secret.algorithm:
+            raise WrongEncryptionMode(f"Secret was encrypted with mode {secret.algorithm}. Please use it to decrypt.")
 
-        salt = base64.b64decode(secret["salt"])
-        nonce = base64.b64decode(secret["nonce"])
-        ciphertext = base64.b64decode(secret["ciphertext"])
+        salt = base64.b64decode(secret.salt or "")
+        nonce = base64.b64decode(secret.nonce or "")
+        ciphertext = base64.b64decode(secret.ciphertext)
 
         aes_key = self.derive_key(key, salt)
         aesgcm = AESGCM(aes_key)

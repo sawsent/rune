@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Optional, Tuple
+from typing import Annotated, List, Literal, Optional, Tuple
 import typer
 import pyperclip
 
@@ -12,7 +12,7 @@ from rune.utils.settings import ensure_secrets_exist, ensure_settings_exist, get
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 NAME_HELP = "The name of the new secret (will be prompted for if not provided)"
-SECRET_HELP = "Secret text (will be prompted for if not provided)"
+FIELDS_HELP = "The fields to store. Usage `-f host,port,username,password`. They will be queried secretly."
 KEY_HELP = "Encryption key (will be prompted for if not provided)"
 
 NAME_PROMPT = "The name of the secret"
@@ -20,29 +20,32 @@ SECRET_PROMPT = "The secret"
 KEY_PROMPT = "The encryption key for this secret"
 
 def enrich_arguments(name: Optional[str] = "",
-                     secret: Optional[str] = "",
-                     key: Optional[str] = "") -> Tuple[str, str, str]:
+                     key: Optional[str] = "") -> Tuple[str, str]:
     if name is None:
         name = typer.prompt(NAME_PROMPT)
-    if secret is None:
-        secret = typer.prompt(SECRET_PROMPT, hide_input=True)
     if key is None:
         key = typer.prompt(KEY_PROMPT, hide_input=True)
 
-    if name is not None and secret is not None and key is not None:
-        return (name, secret, key)
-    return ("", "", "")
+    if name is not None and key is not None:
+        return (name, key)
+    return ("", "")
+
+def get_secret_input(name: str) -> str:
+    key = typer.prompt(f"The value for field '{name}'", hide_input=True)
+    return key
+
 
 @app.command()
-def add(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-        secret: Annotated[Optional[str], typer.Option("--secret", "-s", help=SECRET_HELP)] = None,
+def add(fields: Annotated[str, typer.Option("--field", "-f", help=FIELDS_HELP)],
+        name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
         key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None):
     """
     Add a secret to the rune vault.
     """
-    name, secret, key = enrich_arguments(name=name, secret=secret, key=key)
-    result = add_secret(name, secret, key)
+    fields_dict = {k: get_secret_input(k) for k in fields.split(",")}
+    name, key = enrich_arguments(name=name, key=key)
 
+    result = add_secret(name, fields_dict, key)
     if result.is_success():
         print(f"Stored new secret {name}")
     else:
@@ -54,7 +57,7 @@ def delete(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME
     """
     Removes a secret from the rune vault.
     """
-    name, _, _ = enrich_arguments(name=name)
+    name, _ = enrich_arguments(name=name)
     result = delete_secret(name)
     if result.is_success() is None:
         print(f"Deleted secret {name}")
@@ -62,59 +65,93 @@ def delete(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME
         print(result.failure_reason())
 
 @app.command()
-def update(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-           secret: Annotated[Optional[str], typer.Option("--secret", "-s", help=SECRET_HELP)] = None,
+def update(fields: Annotated[List[str], typer.Option("--field", "-f", help=FIELDS_HELP)],
+           name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
            key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None):
     """
     Update a secret in the rune vault.
     """
-    name, secret, key = enrich_arguments(name=name, secret=secret, key=key)
-    result = update_secret(name, secret, key)
+    print("currently disabled")
+    return
+    name, _, key = enrich_arguments(name=name, key=key)
+    result = update_secret(name, fields, key)
     if result.is_success():
         print(f"Updated secret {name}")
     else:
         print(result.failure_reason())
 
-
-
 @app.command()
 def get(name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
         key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-        show_secret: Annotated[bool, typer.Option("--show", help="Display the secret to the terminal")] = False):
+        show: Annotated[bool, typer.Option("--show", "-s", help="Show the secrets when retreived.")] = False):
     """
     Retreive a secret from the rune vault.
 
     Will copy it directly to the clipboard.
     Use --show to also show it to the terminal.
     """
-    name, _, key = enrich_arguments(name=name, key=key)
+    name, key = enrich_arguments(name=name, key=key)
     result = get_secret(name, key)
 
     v = result.value()
     if result.is_success() and v is not None:
-        pyperclip.copy(v)
-        print("Secret copied to clipboard")
-        if show_secret:
-            print(f"Secret: {v}")
+        for i, (k, s) in enumerate(v.items(), 1):
+            print(f"[{i}] - {k}{f": {s}" if show else ""}")
+
+        keys = list(v.keys())
+
+        while True:
+            try:
+                choice = input("Select field to copy (q to cancel): ")
+                if choice == "q" or choice == "Q":
+                    print("No secret copied")
+                    break
+                choice = int(choice) - 1
+                if 0 <= choice - 1 < len(keys):
+                    selected_key = keys[choice]
+                    pyperclip.copy(v[selected_key])
+                    print(f"'{selected_key}' copied to clipboard!")
+                    break
+            except:
+                pass
+
     else:
         print(result.failure_reason())
 
-@app.command()
-def list():
+@app.command(name="ls")
+def list_entries(interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Wether the list is interactive (you can query secrets from ls)")] = False):
     """
     Lists all secret names from the rune vault.
     """
     result = list_secrets()
 
     v = result.value()
+    if v is not None:
+        names = [secret.full_name for secret in v]
+    else:
+        names = []
     if result.is_success() and v is not None:
-        if len(v) == 0:
+        if len(names) == 0:
             print("No secrets yet.")
-        for i, s in enumerate(v):
-            print(f"[{i + 1}] {s.name}")
+        for i, name in enumerate(names, 1):
+            print(f"[{i}] {name}")
+
     else:
         print(f"Unable to retreive secrets. Cause: {result.failure_reason()}")
 
+
+    if interactive:
+        while True:
+            try:
+                choice = int(input("Select field to get: ")) - 1
+                if 0 <= choice < len(names):
+                    selected = names[choice]
+                    get(selected)
+                    break
+            except:
+                pass
+
+    
 @app.command()
 def config(encryption: Annotated[Optional[Literal["no-encryption", "aesgcm"]], typer.Option("--encryption", "-e", help="The type of encryption.")] = None,
            storage_mode: Annotated[Optional[Literal["local"]], typer.Option("--storage-mode", "-s", help="Storage mode.")] = None,
