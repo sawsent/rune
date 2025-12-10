@@ -7,7 +7,7 @@ from rune.encryption import factory as EncrypterFactory
 
 from typing import Dict
 
-def get_secret(name: str, key: str) -> Result[Dict[str, str]]:
+def get_secret(name: str, key: str, namespace: str = "") -> Result[Dict[str, str]]:
     """
     Retreives the encrypted secret via the configured storage manager.
     Decrypts the ciphertext with the provided key.
@@ -18,7 +18,7 @@ def get_secret(name: str, key: str) -> Result[Dict[str, str]]:
     storage = StorageManagerFactory.get_configured_storage_manager()
 
     try:
-        secret = storage.retreive_ciphertext(name)
+        secret = storage.retreive_ciphertext(name, namespace)
         if secret is not None:
             try:
                 decrypted_fields = {}

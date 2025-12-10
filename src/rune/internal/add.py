@@ -5,7 +5,7 @@ from rune.models.secret import Secret
 from rune.storage import factory as StorageManagerFactory
 from typing import Dict
 
-def add_secret(name_and_space: str, fields: Dict[str, str], key: str) -> Result[None]:
+def add_secret(name: str, fields: Dict[str, str], key: str, namespace: str = "") -> Result[None]:
     """
     Encrypts a secret with the configured encrypter.
     Stores the encrypted secret with the configured storage manager.
@@ -17,14 +17,6 @@ def add_secret(name_and_space: str, fields: Dict[str, str], key: str) -> Result[
 
     encrypted_fields = {name: encrypter.encrypt(secret, key) for name, secret in fields.items()}
 
-    split = name_and_space.split("/")
-    if len(split) == 1:
-        namespace = ""
-        name = split[0]
-    else:
-        namespace = "/".join(split[:-1])
-        name = split[-1]
-
     model = Secret(
         name = name,
         namespace = namespace,
@@ -33,7 +25,7 @@ def add_secret(name_and_space: str, fields: Dict[str, str], key: str) -> Result[
     )
 
     try:
-        if storage.retreive_ciphertext(name) is not None:
+        if storage.retreive_ciphertext(name, namespace) is not None:
             return Failure(f"Secret '{name}' already exists. You can update it with `rune update -n {name}`")
 
         if storage.store_ciphertext(model):

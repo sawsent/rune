@@ -1,33 +1,39 @@
+from typing import Dict
 from rune.encryption import factory as EncryptionFactory
 from rune.exception.notfounderror import NotFoundError
 from rune.exception.wrongkey import WrongKeyUsed
 from rune.models.result import Failure, Result, Success
-from rune.models.secret import Secret
 from rune.storage import factory as StorageManagerFactory
-from time import time_ns
 
-def update_secret(name: str, secret: str, key: str) -> Result[None]:
+def update_secret(name: str, fields: Dict[str, str], key: str, namespace: str = "") -> Result[None]:
     """
     Encrypts a secret with the configured encrypter.
     Updates the encrypted secret (if it exists) with the configured storage manager.
 
     Returns the result.
     """
-    encrypter = EncryptionFactory.get_configured_encrypter()
     storage = StorageManagerFactory.get_configured_storage_manager()
 
     try:
-        original_secret = storage.retreive_ciphertext(name)
+        original_secret = storage.retreive_ciphertext(name, namespace)
+        decrypted_fields = {}
         if original_secret is not None:
-            encrypter.decrypt(original_secret.data, key)
+            for name, field in original_secret.fields.items():
+                encrypter = EncryptionFactory.get_encrypter(field.algorithm)
+                decrypted_fields[name] = encrypter.decrypt(field, key)
         else:
             return Failure(f"Secret '{name}' does not exist. You can create it with `rune add -n {name}`.")
     except WrongKeyUsed as err:
         return Failure(f"You have to use the same key to update a secret.")
 
-    model = Secret(name, encrypter.encrypt(secret, key), time_ns())
-
+    encrypter = EncryptionFactory.get_configured_encrypter()
+    encrypted_fields = {name: encrypter.encrypt(secret, key) for name, secret in fields.items()}
+    model = original_secret.update(
+        algorithm = encrypter._encryption_algorithm,
+        fields = encrypted_fields
+    )
     try:
+        
         if storage.store_ciphertext(model):
             return Success()
         else:

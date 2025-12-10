@@ -51,6 +51,25 @@ class Secret:
 
     version: int = 1
 
+    def update(self,
+               name: str | None = None,
+               algorithm: str | None = None,
+               namespace: str | None = None,
+               fields: Dict[str, SecretField] | None = None,
+               tags: List[str] | None = None,
+               metadata: Dict[str, str] | None = None,
+               version: int | None = None) -> Self:
+        return type(self)(
+            name = name or self.name,
+            algorithm = algorithm or self.algorithm,
+            namespace = namespace or self.namespace,
+            fields = fields or self.fields,
+            tags = tags or self.tags,
+            metadata = metadata or self.metadata,
+            updated_at = datetime.now(),
+            version = version or self.version
+        )
+
     @property
     def full_name(self) -> str:
         return self.namespace + "/" + self.name
