@@ -110,7 +110,7 @@ rune config --encryption <mode> --storage-mode <mode> --secrets-file <path>
 
 Supported values:
 
-- `--encryption`: `no-encryption`
+- `--encryption`: `no-encryption`, `aesgcm`
 - `--storage-mode`: `local`
 - `--secrets-file`: Any file path (e.g., `~/.secrets.json`)
 
