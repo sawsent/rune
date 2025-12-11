@@ -74,6 +74,8 @@ class Secret:
 
     @property
     def full_name(self) -> str:
+        if self.namespace == "":
+            return self.name
         return self.namespace + "/" + self.name
 
     def to_dict(self) -> Dict:

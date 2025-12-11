@@ -5,7 +5,7 @@ from rune.models.secret import Secret
 
 class StorageManager(ABC):
     @abstractmethod
-    def store_ciphertext(self, secret: Secret) -> bool:
+    def store_secret(self, secret: Secret) -> bool:
         """
         Stores the provided ciphertext under the provided secret name.
 
@@ -15,7 +15,7 @@ class StorageManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def retreive_ciphertext(self, name: str, namespace: str = "") -> Optional[Secret]:
+    def retreive_secret(self, name: str, namespace: str)-> Optional[Secret]:
         """
         Retreives the provided ciphertext under the provided secret name.
 
@@ -24,7 +24,7 @@ class StorageManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def delete_entry(self, name: str) -> bool:
+    def delete_secret(self, name: str, namespace: str) -> bool:
         """
         Deletes the entry with the provided name.
 
@@ -34,7 +34,7 @@ class StorageManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_entries(self) -> List[Secret]:
+    def get_all_secrets(self) -> List[Secret]:
         """
         Retrieves all entry names.
 

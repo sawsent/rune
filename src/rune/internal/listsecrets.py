@@ -11,7 +11,7 @@ def list_secrets() -> Result[List[Secret]]:
     """
     storage = StorageManagerFactory.get_configured_storage_manager()
     try:
-        return Success(storage.get_entries())
+        return Success(storage.get_all_secrets())
     except NotFoundError as err:
         return Failure(err.message)
 

@@ -18,7 +18,7 @@ def get_secret(name: str, key: str, namespace: str = "") -> Result[Dict[str, str
     storage = StorageManagerFactory.get_configured_storage_manager()
 
     try:
-        secret = storage.retreive_ciphertext(name, namespace)
+        secret = storage.retreive_secret(name, namespace)
         if secret is not None:
             try:
                 decrypted_fields = {}

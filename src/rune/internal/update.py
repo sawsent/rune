@@ -15,7 +15,7 @@ def update_secret(name: str, fields: Dict[str, str], key: str, namespace: str = 
     storage = StorageManagerFactory.get_configured_storage_manager()
 
     try:
-        original_secret = storage.retreive_ciphertext(name, namespace)
+        original_secret = storage.retreive_secret(name, namespace)
         decrypted_fields = {}
         if original_secret is not None:
             for name, field in original_secret.fields.items():
@@ -42,7 +42,7 @@ def update_secret(name: str, fields: Dict[str, str], key: str, namespace: str = 
         fields = encrypted_fields
     )
     try:
-        if storage.store_ciphertext(model):
+        if storage.store_secret(model):
             return Success()
         else:
             return Failure(f"Storage manager could not store the secret {name}.")

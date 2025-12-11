@@ -12,10 +12,10 @@ def delete_secret(name: str, namespace: str = "") -> Result[None]:
     storage = StorageManagerFactory.get_configured_storage_manager()
 
     try:
-        if storage.retreive_ciphertext(name, namespace) is None:
+        if storage.retreive_secret(name, namespace) is None:
             return Failure(f"Secret '{name}' does not exist.")
 
-        if storage.delete_entry(name, namespace):
+        if storage.delete_secret(name, namespace):
             return Success()
         else:
             return Failure(f"Storage manager could not delete secret '{name}'")

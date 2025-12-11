@@ -25,10 +25,10 @@ def add_secret(name: str, fields: Dict[str, str], key: str, namespace: str = "")
     )
 
     try:
-        if storage.retreive_ciphertext(name, namespace) is not None:
+        if storage.retreive_secret(name, namespace) is not None:
             return Failure(f"Secret '{name}' already exists. You can update it with `rune update -n {name}`")
 
-        if storage.store_ciphertext(model):
+        if storage.store_secret(model):
             return Success()
         else:
             return Failure(f"Storage manager could not store the secret {name}")
