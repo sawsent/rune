@@ -70,14 +70,7 @@ def get(
 
 @app.command(name="ls")
 def list_entries(
-    interactive: Annotated[
-    bool,
-    typer.Option(
-        "--interactive",
-        "-i",
-        help="Interactively select and retrieve secrets from the list.",
-    ),
-] = False
+    interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False
 ):
     """
     Lists all secrets in the rune vault, organized by namespace.

@@ -26,17 +26,11 @@ def handle_get_command(_name: str | None = None, _key: str | None = None, show: 
         )
         return
 
-    # Build table
-    table = Table(title=f"Secret: [cyan]{name}[/]")
-    table.add_column("#", style="bold cyan", width=4)
-    table.add_column("Field", style="yellow")
-    table.add_column("Value")
 
-    for i, (k, s) in enumerate(v.items(), 1):
-        display_value = s if show else "••••••••"
-        table.add_row(str(i), k, display_value)
-
-    console.print(table)
+    console.print(Panel.fit(
+        f"Stored fields for secret '[bold cyan]{name}[/]':" + "\n" + \
+        "\n".join([f"[bold cyan][{i}][/] {k}" + ("" if not show else f" - {s}") for i, (k, s) in enumerate(v.items(), 1)])
+    ))
 
     keys = list(v.keys())
 
