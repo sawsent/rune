@@ -1,5 +1,6 @@
 from typing import Dict, List
 from rich.console import Console
+from rich.panel import Panel
 import typer
 from rune.commands.getcmd import handle_get_command
 from rune.internal.listsecrets import list_secrets
@@ -14,7 +15,10 @@ def handle_ls_command(interactive: bool):
     secrets = result.value()
 
     if result.is_failure():
-        console.print(f"[red]Unable to retrieve secrets:[/] {result.failure_reason()}")
+        console.print(Panel.fit(
+            f"[bold red]Unable to retrieve secrets:[/] {result.failure_reason()}",
+            title="[red]Failed[/]",
+        ))
         return
 
     if not secrets:
@@ -27,7 +31,12 @@ def handle_ls_command(interactive: bool):
 
     root = Tree("[bold]secrets/[/]")
     indexes = _expand_rich_tree(root, names_tree)
-    console.print(root)
+    console.print(
+        Panel.fit(
+            root,
+            title="[green]✓ Secrets Tree[/]"
+        )
+    )
 
     if interactive:
         while True:
@@ -51,7 +60,7 @@ def _build_namespace_tree(full_names: List[str]) -> Dict:
                 current["__items__"] = []
             current["__items__"].append(parts[0])
             return current
-        
+
         if not parts[0] in current:
             current[parts[0]] = {}
 
@@ -99,7 +108,7 @@ def _build_namespace_tree(full_names: List[str]) -> Dict:
         result.setdefault("__items__", [])
         return result
 
-                    
+
     tree = {}
     for path in full_names:
         tree = _build_branch(tree, path.split("/"))
