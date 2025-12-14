@@ -1,16 +1,19 @@
 from rune.encryption.base import Encrypter
-from rune.utils.settings import get_configured_encryption_identifier
+from rune.models.settings.encryptionsettings import AES_GCMEncryptionSettings
+from rune.models.settings.settings import Settings
 from rune.encryption.aesgcm import AESGCMEncrypter
-from rune.encryption.noencryption import NoEncryption
 
-def get_configured_encrypter() -> Encrypter:
-    return get_encrypter(algorithm=get_configured_encryption_identifier())
+def get_encrypter(settings: Settings) -> Encrypter:
+    match settings.encryption:
+        case AES_GCMEncryptionSettings():
+            return AESGCMEncrypter()
+        case _:
+            raise ValueError(f"Algorithm '{settings.encryption.mode}' is not supported.")
 
-def get_encrypter(algorithm: str | None) -> Encrypter:
-    if algorithm == NoEncryption.encryption_algorithm():
-        return NoEncryption()
+def get_encrypter_by_algorithm(algorithm: str | None) -> Encrypter:
     if algorithm == AESGCMEncrypter.encryption_algorithm():
         return AESGCMEncrypter()
 
     raise ValueError(f"Algorithm '{algorithm}' is not supported.")
+
 

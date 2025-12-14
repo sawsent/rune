@@ -1,13 +1,12 @@
 from typing import Annotated, Optional
 import typer
 
+from rune.context import Context
 from rune.commands.addcmd import handle_add_cmd
 from rune.commands.getcmd import handle_get_command
 from rune.commands.updatecmd import handle_update_command
 from rune.commands.deletecmd import handle_delete_command
 from rune.commands.listcmd import handle_ls_command
-
-from rune.utils.settings import ensure_secrets_exist, ensure_settings_exist
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -19,8 +18,8 @@ NAME_HELP = (
 )
 
 FIELDS_HELP = (
-    "Fields to store, comma-separated. Example: `-f host,port,user,password`.\n"
-        "Each field will be queried securely."
+    "Fields to store, comma-separated. Example: `-f host=localhost,port=9999,user,password`.\n"
+        "Each field will be queried securely if not provided."
 )
 
 KEY_HELP = "Encryption key (if omitted, will be securely prompted)."
@@ -60,6 +59,10 @@ def update(
 def get(
     _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
     _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
+    interactive: Annotated[bool, typer.Option(
+        "--interactive", "-i",
+        help="Interactively select and retrieve secrets from the list. (same as running `rune ls -i`). Name and key are discarded."
+    )] = False,
     show: Annotated[bool, typer.Option("--show","-s",help="Show the secret values instead of hiding them.")] = False,
 ):
     """
@@ -68,20 +71,27 @@ def get(
     Copies the selected field to clipboard.
     Use --show to display field values in the terminal.
     """
-    handle_get_command(user, _name, _key, show)
+    if interactive:
+        handle_ls_command(user, None, interactive, show)
+    else:
+        handle_get_command(user, _name, _key, show)
 
 @app.command(name="ls")
 def list_entries(
-    interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False
+    namespace: Annotated[Optional[str], typer.Option("--namespace", "-ns", help="Filter the shown secrets by namespace")] = None,
+    interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False,
+    show: Annotated[bool, typer.Option(
+        "--show","-s",
+        help="Show the secret values instead of hiding them. Only used when running with the --interactive flag."
+    )] = False,
 ):
     """
     Lists all secrets in the rune vault, organized by namespace.
     Collapses single-child namespaces for cleaner display.
     """
-    handle_ls_command(user, interactive)
+    handle_ls_command(user, namespace, interactive, show)
 
 def main():
-    ensure_settings_exist()
-    ensure_secrets_exist()
+    Context.build()
     app()
 

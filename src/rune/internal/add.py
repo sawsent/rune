@@ -1,8 +1,7 @@
-from rune.encryption import factory as EncryptionFactory
+from rune.context import Context
 from rune.exception.notfounderror import NotFoundError
 from rune.models.result import Failure, Result, Success
 from rune.models.secret import Secret
-from rune.storage.secrets import factory as StorageManagerFactory
 from typing import Dict
 
 from rune.utils.input import get_fqn
@@ -14,8 +13,8 @@ def add_secret(user: str, name: str, namespace: str, fields: Dict[str, str], key
 
     Returns the result.
     """
-    encrypter = EncryptionFactory.get_configured_encrypter()
-    storage = StorageManagerFactory.get_configured_storage_manager()
+    encrypter = Context.get().configured_encrypter
+    storage = Context.get().storage_manager
 
     encrypted_fields = {name: encrypter.encrypt(secret, key) for name, secret in fields.items()}
 

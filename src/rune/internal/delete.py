@@ -1,6 +1,6 @@
+from rune.context import Context
 from rune.exception.notfounderror import NotFoundError
 from rune.models.result import Failure, Result, Success
-from rune.storage.secrets import factory as StorageManagerFactory
 from rune.utils.input import get_fqn
 
 def delete_secret(user: str, name: str, namespace: str) -> Result[None]:
@@ -10,7 +10,7 @@ def delete_secret(user: str, name: str, namespace: str) -> Result[None]:
     Returns the reason for failure, if it fails.
     None if is successful.
     """
-    storage = StorageManagerFactory.get_configured_storage_manager()
+    storage = Context.get().storage_manager
 
     fqn = get_fqn(name, namespace)
 

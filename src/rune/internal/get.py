@@ -1,3 +1,4 @@
+from rune.context import Context
 from rune.exception.notfounderror import NotFoundError
 from rune.exception.wrongencryption import WrongEncryptionMode
 from rune.exception.wrongkey import WrongKeyUsed
@@ -17,7 +18,7 @@ def get_secret(user: str, name: str, namespace: str, key: str) -> Result[Dict[st
     Returns the decrypted secret, if it exists.
     Returns None if not successful.
     """
-    storage = StorageManagerFactory.get_configured_storage_manager()
+    storage = Context.get().storage_manager
 
     fqn = get_fqn(name, namespace)
 
@@ -27,7 +28,7 @@ def get_secret(user: str, name: str, namespace: str, key: str) -> Result[Dict[st
             try:
                 decrypted_fields = {}
                 for field_name, field in secret.fields.items():
-                    encrypter = EncrypterFactory.get_encrypter(field.algorithm)
+                    encrypter = EncrypterFactory.get_encrypter_by_algorithm(field.algorithm)
                     decrypted_fields[field_name] = encrypter.decrypt(field, key)
             except WrongEncryptionMode as err:
                 return Failure(err.message)

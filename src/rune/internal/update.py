@@ -1,9 +1,10 @@
 from typing import Dict
+
+from rune.context import Context
 from rune.encryption import factory as EncryptionFactory
 from rune.exception.notfounderror import NotFoundError
 from rune.exception.wrongkey import WrongKeyUsed
 from rune.models.result import Failure, Result, Success
-from rune.storage.secrets import factory as StorageManagerFactory
 from rune.utils.input import get_fqn
 
 def update_secret(user: str, name: str, namespace: str, fields: Dict[str, str], key: str) -> Result[None]:
@@ -13,7 +14,7 @@ def update_secret(user: str, name: str, namespace: str, fields: Dict[str, str], 
 
     Returns the result.
     """
-    storage = StorageManagerFactory.get_configured_storage_manager()
+    storage = Context.get().storage_manager
 
     fqn = get_fqn(name, namespace)
 
@@ -22,14 +23,14 @@ def update_secret(user: str, name: str, namespace: str, fields: Dict[str, str], 
         decrypted_fields = {}
         if original_secret is not None:
             for name, field in original_secret.fields.items():
-                encrypter = EncryptionFactory.get_encrypter(field.algorithm)
+                encrypter = EncryptionFactory.get_encrypter_by_algorithm(field.algorithm)
                 decrypted_fields[name] = encrypter.decrypt(field, key)
         else:
             return Failure(f"Secret '{name}' does not exist. You can create it with `rune add -n {name}`.")
     except WrongKeyUsed as err:
         return Failure(f"You have to use the same key to update a secret.")
 
-    encrypter = EncryptionFactory.get_configured_encrypter()
+    encrypter = Context.get().configured_encrypter
     provided_encrypted_fields = {name: encrypter.encrypt(secret, key) for name, secret in fields.items()}
 
     encrypted_fields = {}

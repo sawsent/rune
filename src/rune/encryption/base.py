@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Self
 
 from rune.models.secret import SecretField
 

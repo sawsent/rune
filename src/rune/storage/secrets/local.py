@@ -1,13 +1,18 @@
 from typing import Dict, Optional, List
-from rune.exception.notfounderror import NotFoundError
 from rune.models.secret import Secret
 from rune.storage.secrets.base import StorageManager
 from json import load, dump
+import os
 
 class LocalJsonStorageManager(StorageManager):
-
     def __init__(self, secrets_file_path: str) -> None:
         self.__secrets_file_path = secrets_file_path
+        self._ensure_secrets()
+
+    def _ensure_secrets(self) -> None:
+        if not os.path.exists(self.__secrets_file_path):
+            with open(self.__secrets_file_path, "w") as f:
+                dump({}, f, indent=4)
 
     def store_secret(self, secret: Secret) -> bool:
         """
@@ -49,16 +54,11 @@ class LocalJsonStorageManager(StorageManager):
     def get_all_secrets(self, user: str) -> List[Secret]:
         """
         Retrieves all entry names.
-
-        Raises NotFoundError if it fails to retreive entries.
         """
-        try:
-            with open(self.__secrets_file_path, "r") as f:
-                d = load(f)
-                all_secrets = [ Secret.from_dict(v) for _, v in d.items() ]
-                return [s for s in all_secrets if s.user == user]
-        except:
-            raise NotFoundError(f"Secrets file at {self.__secrets_file_path} not found")
+        with open(self.__secrets_file_path, "r") as f:
+            d = load(f)
+            all_secrets = [ Secret.from_dict(v) for _, v in d.items() ]
+            return [s for s in all_secrets if s.user == user]
 
 
     def store_secrets(self, secrets: Dict[str, Secret]) -> bool:

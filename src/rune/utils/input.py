@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Dict
+from typing import Tuple, Dict
 from rich.prompt import Prompt
 
 NAME_PROMPT = "Secret name"
@@ -20,7 +20,14 @@ def get_secret_input(name: str) -> str:
     return Prompt.ask(f"Value for field '[bold]{name}[/]'", password=True)
 
 def get_fields_dict(fields: str) -> Dict[str, str]:
-    return {k.strip(): get_secret_input(k.strip()) for k in fields.split(",")}
+    ret = {}
+    for field in fields.split(","):
+        split = field.split("=")
+        if len(split) == 1:
+            ret[field] = get_secret_input(field)
+        elif len(split) >= 2:
+            ret[split[0]] = "".join(split[1:])
+    return ret
 
 def get_fqn(name: str, namespace: str) -> str:
     if namespace == "":

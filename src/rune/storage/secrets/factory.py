@@ -1,10 +1,13 @@
-from rune.utils.settings import get_configured_storage_manager_identifier, get_secrets_path
+from rune.models.settings.settings import Settings
+from rune.models.settings.storagesettings import FileBasedStorageSettings
+from rune.storage.secrets.base import StorageManager
 from rune.storage.secrets.local import LocalJsonStorageManager
 
-def get_configured_storage_manager():
-    manager_identifier = get_configured_storage_manager_identifier()
-    match manager_identifier:
-        case "local":
-            return LocalJsonStorageManager(get_secrets_path())
+def get_storage_manager(settings: Settings) -> StorageManager:
+    match settings.storage:
+        case FileBasedStorageSettings(file=file):
+            return LocalJsonStorageManager(file)
         case _:
-            raise ValueError(f"Storage manager does not exist for identifier {manager_identifier}.")
+            raise ValueError(f"Storage manager does not exist for identifier {settings.storage.mode}.")
+
+
