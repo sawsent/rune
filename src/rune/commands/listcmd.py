@@ -10,8 +10,8 @@ import typer
 
 console = Console()
 
-def handle_ls_command(interactive: bool):
-    result = list_secrets()
+def handle_ls_command(user: str, interactive: bool):
+    result = list_secrets(user)
     secrets = result.value()
 
     if result.is_failure():
@@ -29,7 +29,7 @@ def handle_ls_command(interactive: bool):
 
     names_tree = _build_namespace_tree(full_names)
 
-    root = Tree("[bold]secrets/[/]")
+    root = Tree(f"[bold]{user}/[/]")
     indexes = _expand_rich_tree(root, names_tree)
     console.print(
         Panel.fit(
@@ -47,7 +47,7 @@ def handle_ls_command(interactive: bool):
                 idx = int(choice)
                 if idx in indexes:
                     console.print(f"Fetching secret [bold]{indexes[idx]}[/]")
-                    handle_get_command(_name=indexes[idx])
+                    handle_get_command(user, _name=indexes[idx])
                     break
             except:
                 continue

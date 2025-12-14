@@ -1,18 +1,13 @@
 from typing import Dict, Optional, List
 from rune.exception.notfounderror import NotFoundError
 from rune.models.secret import Secret
-from rune.storage.base import StorageManager
+from rune.storage.secrets.base import StorageManager
 from json import load, dump
 
 class LocalJsonStorageManager(StorageManager):
 
     def __init__(self, secrets_file_path: str) -> None:
         self.__secrets_file_path = secrets_file_path
-
-    def full_name(self, name: str, namespace: str) -> str:
-        if namespace == "":
-            return name
-        return namespace + "/" + name
 
     def store_secret(self, secret: Secret) -> bool:
         """
@@ -21,38 +16,37 @@ class LocalJsonStorageManager(StorageManager):
         Returns True if storage is successful, False otherwise.
         Raises NotFoundError if it fails to find a secrets file.
         """
-        secrets = self.stored_secrets_by_full_name()
+        secrets = self.stored_secrets_by_full_name(secret.user)
         secrets[secret.full_name] = secret
 
         return self.store_secrets(secrets)
 
-    def retreive_secret(self, name: str, namespace: str) -> Optional[Secret]:
+    def retreive_secret(self, user: str, name: str) -> Optional[Secret]:
         """
         Retreives the provided ciphertext under the provided secret name.
 
         Raises NotFoundError if it fails to find a secrets file.
         """
-        secrets = self.stored_secrets_by_full_name()
-        return secrets.get(self.full_name(name, namespace))
+        secrets = self.stored_secrets_by_full_name(user)
+        return secrets.get(name)
 
-    def delete_secret(self, name: str, namespace: str) -> bool:
+    def delete_secret(self, user: str, name: str) -> bool:
         """
         Deletes the entry with the provided name.
 
         Returns True if successful, False if it fails.
         Raises NotFoundError if it fails to find a secrets file.
         """
-        secrets = self.stored_secrets_by_full_name()
-        full_name = self.full_name(name, namespace)
-        if not full_name in secrets:
+        secrets = self.stored_secrets_by_full_name(user)
+        if not name in secrets:
             return False
         
-        removed = {n: s for n, s in secrets.items() if not n == full_name}
+        removed = {n: s for n, s in secrets.items() if not n == name}
 
         return self.store_secrets(removed)
 
 
-    def get_all_secrets(self) -> List[Secret]:
+    def get_all_secrets(self, user: str) -> List[Secret]:
         """
         Retrieves all entry names.
 
@@ -61,7 +55,8 @@ class LocalJsonStorageManager(StorageManager):
         try:
             with open(self.__secrets_file_path, "r") as f:
                 d = load(f)
-                return [ Secret.from_dict(v) for _, v in d.items() ]
+                all_secrets = [ Secret.from_dict(v) for _, v in d.items() ]
+                return [s for s in all_secrets if s.user == user]
         except:
             raise NotFoundError(f"Secrets file at {self.__secrets_file_path} not found")
 
@@ -76,8 +71,8 @@ class LocalJsonStorageManager(StorageManager):
             return False
 
 
-    def stored_secrets_by_full_name(self) -> Dict[str, Secret]:
-        secrets = self.get_all_secrets()
+    def stored_secrets_by_full_name(self, user: str) -> Dict[str, Secret]:
+        secrets = self.get_all_secrets(user)
         return {s.full_name: s for s in secrets}
         
 

@@ -14,12 +14,20 @@ def split_name_and_ns(n_and_ns: str) -> Tuple[str, str]:
     s = n_and_ns.split("/")
     if len(s) == 1:
         return (s[0], "")
-    return s[-1], "/".join(s[:-1]).removeprefix("/").removesuffix("/")
+    return s[-1], "/".join(s[:-1]).removeprefix("/").removesuffix("/").strip()
 
 def get_secret_input(name: str) -> str:
     return Prompt.ask(f"Value for field '[bold]{name}[/]'", password=True)
 
 def get_fields_dict(fields: str) -> Dict[str, str]:
     return {k.strip(): get_secret_input(k.strip()) for k in fields.split(",")}
+
+def get_fqn(name: str, namespace: str) -> str:
+    if namespace == "":
+        return name
+    else:
+        return namespace + "/" + name
+
+
 
 

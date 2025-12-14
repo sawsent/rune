@@ -6,9 +6,9 @@ from rune.utils.input import input_name, split_name_and_ns
 
 console = Console()
 
-def handle_delete_command(_name: str | None = None) -> None:
+def handle_delete_command(user: str, _name: str | None = None) -> None:
     name, namespace = split_name_and_ns(_name or input_name())
-    result = delete_secret(name, namespace)
+    result = delete_secret(user, name, namespace)
 
     if result.is_success():
         console.print(

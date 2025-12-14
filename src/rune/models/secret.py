@@ -41,6 +41,7 @@ class SecretField:
 class Secret:
     name: str
     algorithm: str
+    user: str
     namespace: str = ""
     fields: Dict[str, SecretField] = field(default_factory=dict)
     tags: List[str] = field(default_factory=list)
@@ -54,6 +55,7 @@ class Secret:
     def update(self,
                name: str | None = None,
                algorithm: str | None = None,
+               user: str | None = None,
                namespace: str | None = None,
                fields: Dict[str, SecretField] | None = None,
                tags: List[str] | None = None,
@@ -62,6 +64,7 @@ class Secret:
         return type(self)(
             name = name or self.name,
             algorithm = algorithm or self.algorithm,
+            user = user or self.user,
             namespace = namespace or self.namespace,
             fields = fields or self.fields,
             tags = tags or self.tags,
@@ -83,6 +86,7 @@ class Secret:
             "id": self.id,
             "name": self.name,
             "algorithm": self.algorithm,
+            "user": self.user,
             "namespace": self.namespace,
             "fields": {k: v.to_dict() for k, v in self.fields.items()},
             "tags": self.tags,
@@ -98,6 +102,7 @@ class Secret:
         return cls(
             id=data.get("id", str(uuid.uuid4())),
             name=data["name"],
+            user = data["user"],
             algorithm=data["algorithm"],
             namespace=data.get("namespace", ""),
             fields=fields,

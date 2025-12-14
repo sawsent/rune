@@ -11,6 +11,8 @@ from rune.utils.settings import ensure_secrets_exist, ensure_settings_exist
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
+user: str = "default-user-2"
+
 NAME_HELP = (
     "The name of the new secret.\n"
         "Supports namespaces (e.g. `db/prod/my-db`). If omitted, you'll be prompted."
@@ -32,7 +34,7 @@ def add(
     """
     Add a secret to the rune vault.
     """
-    handle_add_cmd(_fields, _name, _key)
+    handle_add_cmd(user, _fields, _name, _key)
     
 @app.command()
 def delete(
@@ -41,8 +43,8 @@ def delete(
     """
     Removes a secret from the rune vault.
     """
-    handle_delete_command(_name)
-    
+    handle_delete_command(user, _name)
+
 @app.command()
 def update(
     _fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
@@ -52,7 +54,7 @@ def update(
     """
     Update an existing secret in the rune vault.
     """
-    handle_update_command(_fields, _name, _key)
+    handle_update_command(user, _fields, _name, _key)
 
 @app.command()
 def get(
@@ -66,7 +68,7 @@ def get(
     Copies the selected field to clipboard.
     Use --show to display field values in the terminal.
     """
-    handle_get_command(_name, _key, show)
+    handle_get_command(user, _name, _key, show)
 
 @app.command(name="ls")
 def list_entries(
@@ -76,7 +78,7 @@ def list_entries(
     Lists all secrets in the rune vault, organized by namespace.
     Collapses single-child namespaces for cleaner display.
     """
-    handle_ls_command(interactive)
+    handle_ls_command(user, interactive)
 
 def main():
     ensure_settings_exist()

@@ -9,11 +9,11 @@ from rune.utils.input import input_key, input_name, split_name_and_ns
 
 console = Console()
 
-def handle_get_command(_name: str | None = None, _key: str | None = None, show: bool = False):
+def handle_get_command(user: str, _name: str | None = None, _key: str | None = None, show: bool = False):
     name, namespace = split_name_and_ns(_name or input_name())
     key = (_key or input_key())
 
-    result = get_secret(name, key, namespace)
+    result = get_secret(user, name, namespace, key)
 
     v = result.value()
 

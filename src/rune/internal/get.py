@@ -2,12 +2,14 @@ from rune.exception.notfounderror import NotFoundError
 from rune.exception.wrongencryption import WrongEncryptionMode
 from rune.exception.wrongkey import WrongKeyUsed
 from rune.models.result import Result, Success, Failure
-from rune.storage import factory as StorageManagerFactory
+from rune.storage.secrets import factory as StorageManagerFactory
 from rune.encryption import factory as EncrypterFactory
 
 from typing import Dict
 
-def get_secret(name: str, key: str, namespace: str = "") -> Result[Dict[str, str]]:
+from rune.utils.input import get_fqn
+
+def get_secret(user: str, name: str, namespace: str, key: str) -> Result[Dict[str, str]]:
     """
     Retreives the encrypted secret via the configured storage manager.
     Decrypts the ciphertext with the provided key.
@@ -17,8 +19,10 @@ def get_secret(name: str, key: str, namespace: str = "") -> Result[Dict[str, str
     """
     storage = StorageManagerFactory.get_configured_storage_manager()
 
+    fqn = get_fqn(name, namespace)
+
     try:
-        secret = storage.retreive_secret(name, namespace)
+        secret = storage.retreive_secret(user, fqn)
         if secret is not None:
             try:
                 decrypted_fields = {}
@@ -32,7 +36,7 @@ def get_secret(name: str, key: str, namespace: str = "") -> Result[Dict[str, str
 
             return Success(decrypted_fields)
         else:
-            return Failure(f"Secret '{name}' does not exist.")
+            return Failure(f"Secret '{fqn}' does not exist.")
 
     except NotFoundError as err:
         return Failure(err.message)

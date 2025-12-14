@@ -3,9 +3,10 @@ from rune.encryption import factory as EncryptionFactory
 from rune.exception.notfounderror import NotFoundError
 from rune.exception.wrongkey import WrongKeyUsed
 from rune.models.result import Failure, Result, Success
-from rune.storage import factory as StorageManagerFactory
+from rune.storage.secrets import factory as StorageManagerFactory
+from rune.utils.input import get_fqn
 
-def update_secret(name: str, fields: Dict[str, str], key: str, namespace: str = "") -> Result[None]:
+def update_secret(user: str, name: str, namespace: str, fields: Dict[str, str], key: str) -> Result[None]:
     """
     Encrypts a secret with the configured encrypter.
     Updates the encrypted secret (if it exists) with the configured storage manager.
@@ -14,8 +15,10 @@ def update_secret(name: str, fields: Dict[str, str], key: str, namespace: str = 
     """
     storage = StorageManagerFactory.get_configured_storage_manager()
 
+    fqn = get_fqn(name, namespace)
+
     try:
-        original_secret = storage.retreive_secret(name, namespace)
+        original_secret = storage.retreive_secret(user, fqn)
         decrypted_fields = {}
         if original_secret is not None:
             for name, field in original_secret.fields.items():

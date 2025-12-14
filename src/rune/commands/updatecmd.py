@@ -6,12 +6,12 @@ from rune.utils.input import input_key, input_name, split_name_and_ns, get_field
 
 console = Console()
 
-def handle_update_command(_fields: str, _name: str | None = None, _key: str | None = None):
+def handle_update_command(user: str, _fields: str, _name: str | None = None, _key: str | None = None):
 
     name, namespace = split_name_and_ns(_name or input_name())
     fields = get_fields_dict(_fields)
     key = (_key or input_key())
-    result = update_secret(name, fields, key, namespace)
+    result = update_secret(user, name, namespace, fields, key)
 
     if result.is_success():
         console.print(

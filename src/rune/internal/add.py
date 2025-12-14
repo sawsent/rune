@@ -2,10 +2,12 @@ from rune.encryption import factory as EncryptionFactory
 from rune.exception.notfounderror import NotFoundError
 from rune.models.result import Failure, Result, Success
 from rune.models.secret import Secret
-from rune.storage import factory as StorageManagerFactory
+from rune.storage.secrets import factory as StorageManagerFactory
 from typing import Dict
 
-def add_secret(name: str, fields: Dict[str, str], key: str, namespace: str = "") -> Result[None]:
+from rune.utils.input import get_fqn
+
+def add_secret(user: str, name: str, namespace: str, fields: Dict[str, str], key: str) -> Result[None]:
     """
     Encrypts a secret with the configured encrypter.
     Stores the encrypted secret with the configured storage manager.
@@ -20,18 +22,19 @@ def add_secret(name: str, fields: Dict[str, str], key: str, namespace: str = "")
     model = Secret(
         name = name,
         namespace = namespace,
+        user = user,
         algorithm = encrypter._encryption_algorithm,
         fields = encrypted_fields
     )
 
-    try:
-        if storage.retreive_secret(name, namespace) is not None:
-            return Failure(f"Secret '{name}' already exists. You can update it with `rune update -n {name}`")
+    fqn = get_fqn(name, namespace)
 
-        if storage.store_secret(model):
-            return Success()
-        else:
-            return Failure(f"Storage manager could not store the secret {name}")
+    try:
+        if storage.retreive_secret(user, fqn) is not None:
+            return Failure(f"Secret '{fqn}' already exists. You can update it with `rune update -n {fqn}`")
+
+        return Success() if storage.store_secret(model) else Failure(f"Storage manager could not store the secret {fqn}")
+
 
     except NotFoundError as err:
         return Failure(err.message)
