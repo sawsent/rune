@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class EncryptionSettings(ABC):
     AES_GCM: str = "aesgcm"
 
-    @abstractmethod
+    @property
     def mode(self) -> str: raise NotImplementedError()
 
     @abstractmethod
@@ -17,7 +17,15 @@ class EncryptionSettings(ABC):
             case cls.AES_GCM:
                 return AES_GCMEncryptionSettings.from_dict(d)
             case _:
-                raise ValueError()
+                raise ValueError(f"Unknown encryption mode '{d["mode"]}'")
+
+    @classmethod
+    def from_mode(cls, mode: str) -> "EncryptionSettings":
+        match mode:
+            case cls.AES_GCM:
+                return AES_GCMEncryptionSettings.default()
+            case _:
+                raise ValueError(f"Unknown encryption mode '{mode}'")
 
     @classmethod
     def default(cls) -> "EncryptionSettings":
@@ -27,11 +35,12 @@ class EncryptionSettings(ABC):
 
 @dataclass
 class AES_GCMEncryptionSettings(EncryptionSettings):
+    @property
     def mode(self) -> str: return "aesgcm"
 
     def to_dict(self) -> Dict:
         return {
-            "mode": self.mode(),
+            "mode": self.mode,
         }
     
     @classmethod

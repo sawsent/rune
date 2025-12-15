@@ -5,6 +5,7 @@ from rich.panel import Panel
 from rune.context import Context
 from rich.prompt import Prompt
 
+from rune.exception.badinput import BadInputError
 from rune.models.crypto.namespace import Namespace
 
 NAME_PROMPT = "Secret name"
@@ -15,6 +16,9 @@ def input_name() -> str:
 
 def input_key() -> str:
     return Prompt.ask(KEY_PROMPT, password=True)
+
+def input_default_key() -> str:
+    return Prompt.ask("The [bold]default key[/] for this session")
 
 def sanitize_name(full_name: str) -> str:
     return full_name
@@ -53,5 +57,10 @@ def ensure_active_user() -> str:
 
     return maybe_user
 
+
+def require[T](arg: T | None, reason: str = "") -> T:
+    if arg is None:
+        raise BadInputError(reason)
+    return arg
 
 
