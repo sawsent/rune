@@ -40,7 +40,7 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
 
     compacted_tree = _compact_tree(names_tree)
 
-    root = Tree(f"[bold]{user}/{namespace}/[/]" if namespace else f"[bold]{user}[/]")
+    root = Tree(f"[bold]{user}/{namespace}/[/]" if namespace else f"[bold]{user}/[/]")
     indexes = _expand_rich_tree(root, compacted_tree)
     console.print(
         Panel.fit(
