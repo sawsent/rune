@@ -1,4 +1,8 @@
 from typing import Tuple, Dict
+
+from rich.console import Console
+from rich.panel import Panel
+from rune.context import Context
 from rich.prompt import Prompt
 
 NAME_PROMPT = "Secret name"
@@ -35,6 +39,19 @@ def get_fqn(name: str, namespace: str) -> str:
     else:
         return namespace + "/" + name
 
+def get_active_user() -> str | None:
+    return Context.get().settings.active_user
+
+def ensure_active_user() -> str:
+    maybe_user = get_active_user()
+    if not maybe_user:
+        console = Console()
+        console.print(Panel.fit(
+            "[bold red]User not set.[/] Please log in with [bold]`rune login -u <username>`[/]"
+        ))
+        raise RuntimeError("User not set.")
+
+    return maybe_user
 
 
 

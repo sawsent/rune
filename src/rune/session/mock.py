@@ -1,44 +1,39 @@
-from abc import ABC, abstractmethod
+from rune.session.base import SessionManager
 from typing import Optional
 
 
-class SessionManager(ABC):
-    @abstractmethod
+class MockSessionManager(SessionManager):
     def start_session(self, default_password: Optional[str] = None, ttl_seconds: int = -1) -> None:
         """
         Starts a session.
         Session exists for the provided ttl. (-1 means it will not close)
         """
-        raise NotImplementedError()
+        pass
 
-    @abstractmethod
     def end_session(self) -> None:
         """
         Ends the current session.
 
         raises NoSessionError if the session does not exist.
         """
-        raise NotImplementedError()
+        pass
 
-    @abstractmethod
     def is_session_in_progress(self) -> bool:
         """
         Returns true if there is an ongoing session
 
         False otherwise.
         """
-        raise NotImplementedError()
+        return True
 
-    @abstractmethod
     def set_default_key(self, key: str) -> None:
         """
         Sets the default key for this session.
 
         raises NoSessionError if the session does not exist.
         """
-        raise NotImplementedError()
+        pass
 
-    @abstractmethod
     def get_default_key(self) -> Optional[str]:
         """
         Retrieves the default key for this session.
@@ -46,12 +41,11 @@ class SessionManager(ABC):
 
         Raises NoSessionError if the session does not exist.
         """
-        raise NotImplementedError()
+        return "default-key"
 
-    @abstractmethod
     def is_default_key_defined(self) -> bool:
         """
         Raises NoSessionError if the session does not exist
         """
-        raise NotImplementedError()
+        return True
 
