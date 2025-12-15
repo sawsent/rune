@@ -1,6 +1,6 @@
 [project]
 name = "rune"
-version = "0.2.1"
+version = "0.4.9"
 description = "Rune is a cli credential manager for developers. Store, retrieve, update, and manage secrets securely and easily."
 authors = [{ name = "sawsent" }]
 readme = "README.md"

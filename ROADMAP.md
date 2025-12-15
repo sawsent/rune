@@ -1,13 +1,13 @@
 # Rune — Development Roadmap
 
 ## Phase 0 — Foundations (v0.5.0)
-- [ ] Commands: 
+- [x] Commands: 
     - [x] add
     - [x] get
     - [x] ls
     - [x] update
     - [x] delete
-    - [ ] config
+    - [x] config
 - [x] JSON filesystem storage
 - [x] Client-side encryption only
 - [x] Per-secret encryption keys supported
@@ -16,9 +16,9 @@
 - [x] Encforce login before secret operations
 
 **Exit criteria**
-- [ ] Fully functional local-only CLI vault
+- [x] Fully functional local-only CLI vault
+- [x] No architectural blockers for future expansion
 - [ ] Rune is useful daily as a local developer vault
-- [ ] No architectural blockers for future expansion
 
 
 ## Phase 1 — Default-Key & Sessions (v0.8.0)
