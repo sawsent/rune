@@ -18,7 +18,6 @@
 **Exit criteria**
 - [x] Fully functional local-only CLI vault
 - [x] No architectural blockers for future expansion
-- [ ] Rune is useful daily as a local developer vault
 
 
 ## Phase 1 — Default-Key & Sessions (v0.8.0)
@@ -34,6 +33,7 @@
 - [ ] Ergonomic UX
 - [ ] Secure in-memory key handling
 - [ ] Session lifecycle clearly defined
+- [ ] Rune is useful daily as a local developer vault
 
 
 ## Phase 2 — Data Model Hardening and unit testing (v1.0.0)
@@ -60,35 +60,4 @@
 **Exit criteria**
 - [ ] Same CLI works with local or remote storage
 - [ ] Zero trust in server
-
-
-## Phase 4 — Self-Hosted Rune Server (Single User)
-- [ ] Minimal server (CRUD ciphertext blobs)
-- [ ] Authentication pluggable
-- [ ] CLI connects via secure channel
-- [ ] Session/default-key never leaves client
-
-**Exit criteria**
-- [ ] User can self-host a Rune server
-- [ ] CLI experience unchanged
-
-
-## Phase 5 — Multi-User & Sharing (Future)
-- [ ] Multiple users per server
-- [ ] Namespaces per user
-- [ ] Optional secret sharing (key wrapping)
-- [ ] Audit logs (server-side only)
-- [ ] Hosted Rune (optional)
-
-**Exit criteria**
-- [ ] Enterprise-grade model possible
-- [ ] Still usable as simple local CLI
-
-
-## Guiding Principles
-- [ ] Client-side encryption always
-- [ ] Server is untrusted
-- [ ] Defaults favor security over convenience
-- [ ] Simple local-first UX
-- [ ] No irreversible architectural decisions early
 
