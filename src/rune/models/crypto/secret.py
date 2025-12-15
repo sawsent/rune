@@ -1,48 +1,16 @@
-from typing import Self, Dict, Optional, List
+from rune.models.crypto.namespace import Namespace
+from rune.models.crypto.secretfield import SecretField
+
+from typing import Self, Dict, List
 from dataclasses import dataclass, field
 import uuid
 from datetime import datetime
 
 @dataclass
-class SecretField:
-    ciphertext: str
-    nonce: Optional[str] = None
-    tag: Optional[str] = None
-    salt: Optional[str] = None
-    algorithm: Optional[str] = None
-    params: Dict[str, str] = field(default_factory=dict)
-
-    version: int = 1
-
-    def to_dict(self) -> Dict:
-        return {
-            "ciphertext": self.ciphertext,
-            "nonce": self.nonce,
-            "tag": self.tag,
-            "salt": self.salt,
-            "algorithm": self.algorithm,
-            "params": self.params,
-            "version": self.version
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict) -> Self:
-        return cls(
-            ciphertext=data["ciphertext"],
-            nonce=data.get("nonce"),
-            tag=data.get("tag"),
-            salt=data.get("salt"),
-            algorithm=data.get("algorithm"),
-            params=data.get("params", {}),
-            version=data.get("version", 1)
-        )
-
-@dataclass
 class Secret:
-    name: str
+    full_name: str
     algorithm: str
     user: str
-    namespace: str = ""
     fields: Dict[str, SecretField] = field(default_factory=dict)
     tags: List[str] = field(default_factory=list)
     metadata: Dict[str, str] = field(default_factory=dict)
@@ -53,19 +21,17 @@ class Secret:
     version: int = 1
 
     def update(self,
-               name: str | None = None,
+               full_name: str | None = None,
                algorithm: str | None = None,
                user: str | None = None,
-               namespace: str | None = None,
                fields: Dict[str, SecretField] | None = None,
                tags: List[str] | None = None,
                metadata: Dict[str, str] | None = None,
                version: int | None = None) -> Self:
         return type(self)(
-            name = name or self.name,
+            full_name = full_name or self.full_name,
             algorithm = algorithm or self.algorithm,
             user = user or self.user,
-            namespace = namespace or self.namespace,
             fields = fields or self.fields,
             tags = tags or self.tags,
             metadata = metadata or self.metadata,
@@ -76,18 +42,23 @@ class Secret:
         )
 
     @property
-    def full_name(self) -> str:
-        if self.namespace == "":
-            return self.name
-        return self.namespace + "/" + self.name
+    def name_parts(self) -> List[str]:
+        return self.full_name.split("/")
+
+    @property
+    def name(self) -> str:
+        return self.name_parts[-1]
+
+    @property
+    def namespace(self) -> Namespace:
+        return Namespace(self.name_parts[:-1])
 
     def to_dict(self) -> Dict:
         return {
             "id": self.id,
-            "name": self.name,
+            "full_name": self.full_name,
             "algorithm": self.algorithm,
             "user": self.user,
-            "namespace": self.namespace,
             "fields": {k: v.to_dict() for k, v in self.fields.items()},
             "tags": self.tags,
             "metadata": self.metadata,
@@ -101,10 +72,9 @@ class Secret:
         fields = {k: SecretField.from_dict(v) for k, v in data.get("fields", {}).items()}
         return cls(
             id=data.get("id", str(uuid.uuid4())),
-            name=data["name"],
+            full_name=data["full_name"],
             user = data["user"],
             algorithm=data["algorithm"],
-            namespace=data.get("namespace", ""),
             fields=fields,
             tags=data.get("tags", []),
             metadata=data.get("metadata", {}),

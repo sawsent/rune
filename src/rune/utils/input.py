@@ -5,6 +5,8 @@ from rich.panel import Panel
 from rune.context import Context
 from rich.prompt import Prompt
 
+from rune.models.crypto.namespace import Namespace
+
 NAME_PROMPT = "Secret name"
 KEY_PROMPT = "Encryption key"
 
@@ -14,11 +16,12 @@ def input_name() -> str:
 def input_key() -> str:
     return Prompt.ask(KEY_PROMPT, password=True)
 
-def split_name_and_ns(n_and_ns: str) -> Tuple[str, str]:
+def sanitize_name(full_name: str) -> str:
+    return full_name
+
+def split_name_and_ns(n_and_ns: str) -> Tuple[str, Namespace]:
     s = n_and_ns.split("/")
-    if len(s) == 1:
-        return (s[0], "")
-    return s[-1], "/".join(s[:-1]).removeprefix("/").removesuffix("/").strip()
+    return s[-1], Namespace(s[:-1])
 
 def get_secret_input(name: str) -> str:
     return Prompt.ask(f"Value for field '[bold]{name}[/]'", password=True)
@@ -33,11 +36,8 @@ def get_fields_dict(fields: str) -> Dict[str, str]:
             ret[split[0]] = "".join(split[1:])
     return ret
 
-def get_fqn(name: str, namespace: str) -> str:
-    if namespace == "":
-        return name
-    else:
-        return namespace + "/" + name
+def get_fqn(name: str, namespace: Namespace) -> str:
+    return "/".join(namespace.ns + [name])
 
 def get_active_user() -> str | None:
     return Context.get().settings.active_user

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from rune.models.secret import Secret
+from rune.models.crypto.secret import Secret
 
 class StorageManager(ABC):
     @abstractmethod

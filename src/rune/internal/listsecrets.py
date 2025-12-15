@@ -1,8 +1,7 @@
 from rune.context import Context
 from rune.exception.notfounderror import NotFoundError
 from rune.models.result import Failure, Result, Success
-from rune.models.secret import Secret
-from rune.storage.secrets import factory as StorageManagerFactory
+from rune.models.crypto.secret import Secret
 
 from typing import List
 

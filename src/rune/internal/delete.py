@@ -1,9 +1,8 @@
 from rune.context import Context
 from rune.exception.notfounderror import NotFoundError
 from rune.models.result import Failure, Result, Success
-from rune.utils.input import get_fqn
 
-def delete_secret(user: str, name: str, namespace: str) -> Result[None]:
+def delete_secret(user: str, full_name: str) -> Result[None]:
     """
     Deletes the encrypted secret via the configured storage manager.
 
@@ -12,16 +11,14 @@ def delete_secret(user: str, name: str, namespace: str) -> Result[None]:
     """
     storage = Context.get().storage_manager
 
-    fqn = get_fqn(name, namespace)
-
     try:
-        if storage.retreive_secret(user, fqn) is None:
-            return Failure(f"Secret '{fqn}' does not exist.")
+        if storage.retreive_secret(user, full_name) is None:
+            return Failure(f"Secret '{full_name}' does not exist.")
 
-        if storage.delete_secret(user, fqn):
+        if storage.delete_secret(user, full_name):
             return Success()
         else:
-            return Failure(f"Storage manager could not delete secret '{fqn}'")
+            return Failure(f"Storage manager could not delete secret '{full_name}'")
 
     except NotFoundError as err:
         return Failure(err.message)

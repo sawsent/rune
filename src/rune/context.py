@@ -1,10 +1,10 @@
 from typing import Self
-from rune.encryption.base import Encrypter
+from rune.crypto.base import Encrypter
+from rune.crypto.factory import get_encrypter
 from rune.models.settings.settings import Settings
 from rune.storage.secrets.base import StorageManager
 from rune.storage.secrets.factory import get_storage_manager
 from rune.storage.settings.settingsstorage import SettingsStorageManager
-from rune.encryption.factory import get_encrypter
 
 class Context:
     _context: Self | None = None

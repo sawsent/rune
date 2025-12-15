@@ -1,5 +1,5 @@
 from typing import Dict, Optional, List
-from rune.models.secret import Secret
+from rune.models.crypto.secret import Secret
 from rune.storage.secrets.base import StorageManager
 from json import load, dump
 import os

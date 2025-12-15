@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from rune.models.secret import SecretField
+from rune.models.crypto.secretfield import SecretField
 
 
 class Encrypter(ABC):

@@ -12,6 +12,9 @@ from rune.utils.input import ensure_active_user
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
+# One of ["rethrow", "print", "ignore"]
+error_management = "rethrow"
+
 NAME_HELP = (
     "The name of the new secret.\n"
         "Supports namespaces (e.g. `db/prod/my-db`). If omitted, you'll be prompted."
@@ -118,11 +121,14 @@ def logout():
 
 
 def main():
-    Context.build()
     try:
+        Context.build()
         app()
     except RuntimeError as e:
-        raise e
+        if error_management == "rethrow":
+            raise e
+        elif error_management == "print":
+            print(e)
     finally:
         shutdown()
 

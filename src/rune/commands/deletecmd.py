@@ -1,14 +1,14 @@
+from rune.internal.delete import delete_secret
+from rune.utils.input import input_name, sanitize_name
+
 from rich.console import Console
 from rich.panel import Panel
-
-from rune.internal.delete import delete_secret
-from rune.utils.input import input_name, split_name_and_ns
 
 console = Console()
 
 def handle_delete_command(user: str, _name: str | None = None) -> None:
-    name, namespace = split_name_and_ns(_name or input_name())
-    result = delete_secret(user, name, namespace)
+    name = sanitize_name(_name or input_name())
+    result = delete_secret(user, name)
 
     if result.is_success():
         console.print(
