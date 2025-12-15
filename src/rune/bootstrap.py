@@ -6,7 +6,7 @@ from rune.cli import accountmanagement
 from rune.context import Context
 from rune.exception.badinput import BadInputError
 
-error_management = "rethrow"
+error_management = "ignore"
 
 def main():
     app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
