@@ -65,6 +65,7 @@
 - [ ] Import / export (encrypted)
 - [ ] Backward-compatible secret versioning
 - [ ] Pluggable encryption algorithms
+- [ ] Features and flows are documented
 - [ ] Testing implemented
 
 **Exit criteria**
