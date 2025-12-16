@@ -12,246 +12,334 @@ from rune.models.settings.encryptionsettings import EncryptionSettings
 from rune.models.settings.storagesettings import FileBasedStorageSettings
 from rune.utils.input import get_choice_by_idx, require
 
-STORAGE_MODE_HELP = "Configure how and where rune stores encrypted secrets."
-STORAGE_FILE_HELP = "Where to store secrets (file) if storage mode is 'local'"
+STORAGE_MODE_HELP = (
+    "Configure how rune stores encrypted secrets.\n"
+    "Currently supported modes:\n"
+    "  - local: store secrets in a local file on disk."
+)
 
-ENCRYPTION_MODE_HELP = "Configure how and where rune stores encrypted secrets."
+STORAGE_FILE_HELP = (
+    "Path to the secrets file when using local storage.\n"
+    "Example: ~/.rune/secrets.json"
+)
+
+ENCRYPTION_MODE_HELP = (
+    "Configure the encryption algorithm used to encrypt secrets.\n"
+    "Changing this does NOT re-encrypt existing secrets."
+)
 
 console = Console()
 
-def setup(app: Typer):
 
-    profile_app = Typer(name="profile", help="Manage config profiles.")
-    
+def setup(app: Typer):
+    """
+    Register configuration-related commands.
+    """
+
+    profile_app = Typer(
+        name="profile",
+        help="Manage configuration profiles (save, switch, list, delete).",
+    )
+
     @profile_app.command(name="list")
     def list_profiles(
-        interactive: Annotated[bool, Option("--interactive", "-i", help="Choose profile after displaying.")] = False
+        interactive: Annotated[
+            bool,
+            Option(
+                "--interactive",
+                "-i",
+                help="Interactively select a profile to activate after listing.",
+            ),
+        ] = False
     ):
         """
-        Show the list of configured profiles.
+        List all configured profiles.
         """
         settings_manager = Context.get().settings_manager
 
-        profiles = [k for k in settings_manager.get_profiles().keys()]
+        profiles = list(settings_manager.get_profiles().keys())
         profiles_file = str(settings_manager.profiles_file.absolute())
-        
-        console.print(f"Profiles at [bold cyan]{profiles_file}[/]")
+
+        console.print(f"[bold]Profiles file:[/] [cyan]{profiles_file}[/]")
+
         if not profiles:
-            console.print(Panel.fit((
-                "[yellow]No profiles configured yet.[/]\n"
-                "You can create profiles with [bold cyan]`rune config profile save <profile name>`[/]")
-            ))
+            console.print(
+                Panel.fit(
+                    "[yellow]No profiles configured yet.[/]\n\n"
+                    "Create one with:\n"
+                    "[bold cyan]rune config profile save <profile-name>[/]"
+                )
+            )
             return
 
-        console.print(Panel.fit(
-            "\n".join([f"[bold cyan][{idx}][/] {profile}" for idx, profile in enumerate(profiles, 1)])
-        ))
+        console.print(
+            Panel.fit(
+                "\n".join(
+                    f"[bold cyan][{idx}][/] {profile}"
+                    for idx, profile in enumerate(profiles, 1)
+                ),
+                title="Available Profiles",
+            )
+        )
 
         if not interactive:
             return
 
-        choice = get_choice_by_idx("Choose profile to activate", profiles)
-
+        choice = get_choice_by_idx("Select profile to activate", profiles)
         if not choice:
             return
 
         use_profile(choice)
 
-
     @profile_app.command(name="save")
     def save_profile(
-        _name: Annotated[str, Argument(help="The name for the profile to be stored under")],
-        _force: Annotated[bool, Option("--force", "-f", help="If `--force`, will override existing profile")] = False
+        _name: Annotated[
+            str, Argument(help="Name under which the current configuration will be saved.")
+        ],
+        _force: Annotated[
+            bool,
+            Option(
+                "--force",
+                "-f",
+                help="Overwrite the profile if it already exists.",
+            ),
+        ] = False,
     ):
         """
-        Save the current settings to a profile.
-
-        Will fail if profile already exists, or override it if `--force`.
+        Save the current configuration as a profile.
         """
         context = Context.get()
         settings_manager = context.settings_manager
 
         if _name in settings_manager.get_profiles() and not _force:
-            console.print(Panel.fit(
-                f"Profile '[bold cyan]{_name}[/]' already exists. Use `rune config profile save {_name} --force` to override.",
-                title="[red]Failed[/]"
-            ))
+            console.print(
+                Panel.fit(
+                    f"Profile '[bold cyan]{_name}[/]' already exists.\n\n"
+                    f"Use [bold cyan]--force[/] to overwrite it.",
+                    title="[red]Failed[/]",
+                )
+            )
             return
 
         settings_manager.save_profile(context.settings, _name)
-        console.print(Panel.fit(
-            f"Stored profile '[bold cyan]{_name}[/]' with the current settings",
-            title="[green]Success[/]"
-        ))
-        return
+        console.print(
+            Panel.fit(
+                f"Profile '[bold cyan]{_name}[/]' saved successfully.",
+                title="[green]Success[/]",
+            )
+        )
 
     @profile_app.command(name="use")
     def use_profile(
-        _name: Annotated[str, Argument(help="The name for the profile to be used.")],
+        _name: Annotated[
+            str, Argument(help="Name of the profile to activate.")
+        ],
     ):
         """
-        Activate the specified profile.
-
-        Will fail if profile does not exist.
+        Activate a saved configuration profile.
         """
         context = Context.get()
         settings_manager = context.settings_manager
 
         settings = settings_manager.get_profile(_name)
-
         if not settings:
-            console.print(Panel.fit(
-                f"Profile '[bold cyan]{_name}[/]' does not exist.",
-                title="[red]Failed[/]"
-            ))
+            console.print(
+                Panel.fit(
+                    f"Profile '[bold cyan]{_name}[/]' does not exist.",
+                    title="[red]Failed[/]",
+                )
+            )
             return
 
         context.settings = settings.dirty()
         settings_manager.save_profile(settings, _name)
-        console.print(Panel.fit(
-            f"Switched to profile '[bold cyan]{_name}[/]'.",
-            title="[green]Success[/]"
-        ))
-        return
+
+        console.print(
+            Panel.fit(
+                f"Switched to profile '[bold cyan]{_name}[/]'.",
+                title="[green]Success[/]",
+            )
+        )
 
     @profile_app.command(name="delete")
     def delete_profile(
-        _name: Annotated[str, Argument(help="The name for the profile to be used.")],
+        _name: Annotated[
+            str, Argument(help="Name of the profile to delete.")
+        ],
     ):
         """
-        Delete the profile with the provided name.
-       
-        Will fail if the profile does not exist.
+        Delete an existing profile.
         """
         context = Context.get()
         settings_manager = context.settings_manager
 
         profile = settings_manager.get_profile(_name)
-
         if not profile:
-            console.print(Panel.fit(
-                f"Profile '[bold cyan]{_name}[/]' does not exist.",
-                title="[red]Failed[/]"
-            ))
+            console.print(
+                Panel.fit(
+                    f"Profile '[bold cyan]{_name}[/]' does not exist.",
+                    title="[red]Failed[/]",
+                )
+            )
             return
 
-        if typer.confirm(f"Are you sure you want to delete profile {_name}?"):
+        if typer.confirm(f"Are you sure you want to delete profile '{_name}'?"):
             settings_manager.delete_profile(_name)
-            console.print(Panel.fit(
-                f"Profile [bold cyan]{_name}[/] was deleted.",
-                title="[green]Success[/]"
-            ))
-
+            console.print(
+                Panel.fit(
+                    f"Profile '[bold cyan]{_name}[/]' deleted.",
+                    title="[green]Success[/]",
+                )
+            )
         else:
             raise typer.Abort()
 
     @app.command(name="storage")
     def config_storage(
-        _mode: Annotated[Optional[Literal["local"]], Option("--mode", "-m", help=STORAGE_MODE_HELP)] = None,
-        _file: Annotated[Optional[str], Option("--file", "-f", help=STORAGE_FILE_HELP)] = None,
+        _mode: Annotated[
+            Optional[Literal["local"]],
+            Option("--mode", "-m", help=STORAGE_MODE_HELP),
+        ] = None,
+        _file: Annotated[
+            Optional[str],
+            Option("--file", "-f", help=STORAGE_FILE_HELP),
+        ] = None,
     ):
         """
-        Configure storage for rune cli.
+        Configure how and where secrets are stored.
         """
         context = Context.get()
-
         mode: str = _mode or context.settings.storage.mode
 
         if mode == "local":
-            file = require(_file, "File is required if configured mode is 'local'")
+            file = require(_file, "A file path is required when using local storage.")
             path = Path(file)
             storage_path = str(path.expanduser().absolute())
+
             new_settings = FileBasedStorageSettings(storage_path)
             context.settings.update(storage=new_settings)
 
-            console.print(Panel.fit(
-                f"Changed storage file to [bold]'{storage_path}'[/].\n"
-                "[dim]Note: Existing secrets are not re-encrypted.[/]",
-                title="Storage file changed"
-            ))
+            console.print(
+                Panel.fit(
+                    f"Storage file set to:\n"
+                    f"[bold cyan]{storage_path}[/]\n\n"
+                    "[dim]Existing secrets were not modified.[/]",
+                    title="Storage Updated",
+                )
+            )
 
     @app.command(name="encryption")
     def config_encryption(
-        mode: Annotated[Literal["aesgcm"], Option("--mode", "-m", help=ENCRYPTION_MODE_HELP)],
+        mode: Annotated[
+            Literal["aesgcm"],
+            Option("--mode", "-m", help=ENCRYPTION_MODE_HELP),
+        ],
     ):
         """
-        Configure storage for rune cli.
+        Configure the encryption algorithm used by rune.
         """
         context = Context.get()
 
         if mode == context.settings.encryption.mode:
-            console.print(Panel.fit(
-                f"Encryption mode is already [bold]'{mode}'[/].",
-                title="[red]Failed.[/]"
-            ))
+            console.print(
+                Panel.fit(
+                    f"Encryption mode is already set to '[bold]{mode}[/]'.",
+                    title="[red]No Change[/]",
+                )
+            )
             return
 
-
         new_settings = EncryptionSettings.from_mode(mode)
-
         context.settings.update(encryption=new_settings)
 
-        console.print(Panel.fit(
-            f"Changed encryption mode to [bold]'{mode}'[/].",
-            title="Encryption mode changed."
-        ))
+        console.print(
+            Panel.fit(
+                f"Encryption mode set to '[bold]{mode}[/]'.\n\n"
+                "[dim]Existing secrets remain encrypted with their original settings.[/]",
+                title="Encryption Updated",
+            )
+        )
 
     @app.command(name="show")
     def show_config(
-        profile: Annotated[Optional[str], Argument(help="What configuration to show (which profile). If empty, will show the active settings.")] = None,
+        profile: Annotated[
+            Optional[str],
+            Argument(
+                help=(
+                    "Profile name to display.\n"
+                    "If omitted, shows the currently active configuration."
+                )
+            ),
+        ] = None,
     ):
         """
-        Display the rune config.
+        Display the current configuration or a specific profile.
         """
         context = Context.get()
 
         if not profile:
             settings_file = context.settings_manager.settings_file
             settings = context.settings.to_dict()
-            console.print(f"[bold]Displaying [cyan]active[/cyan] settings:[/]")
-            console.print(f"Settings file located at: [bold cyan]'{settings_file}'[/].")
+
+            console.print("[bold]Active configuration:[/]")
+            console.print(f"Settings file: [cyan]{settings_file}[/]")
             console.print(Panel.fit(Pretty(settings, expand_all=True, indent_guides=True)))
             return
-        
-        settings = context.settings_manager.get_profile(profile)
 
+        settings = context.settings_manager.get_profile(profile)
         if not settings:
-            console.print(Panel.fit(
-                f"Profile '[bold cyan]{profile}[/]' does not exist.",
-                title="[red]Failed[/]",
-            ))
+            console.print(
+                Panel.fit(
+                    f"Profile '[bold cyan]{profile}[/]' does not exist.",
+                    title="[red]Failed[/]",
+                )
+            )
             return
 
-        console.print(f"[bold]Displaying settings for profile '[cyan]{profile}[/cyan]':[/]")
+        console.print(f"[bold]Configuration for profile '[cyan]{profile}[/]':[/]")
         console.print(Panel.fit(Pretty(settings.to_dict(), expand_all=True, indent_guides=True)))
 
     @app.command(name="where")
     def whereis(
-        interactive: Annotated[bool, Option("--interactive", "-i", help="If enabled, easily copy file paths.")] = False
+        interactive: Annotated[
+            bool,
+            Option(
+                "--interactive",
+                "-i",
+                help="Interactively select a file path to copy to clipboard.",
+            ),
+        ] = False
     ):
+        """
+        Show where rune stores its configuration and profile files.
+        """
         context = Context.get()
         settings_file = str(context.settings_manager.settings_file.absolute())
         profiles_file = str(context.settings_manager.profiles_file.absolute())
+
         if not interactive:
-            console.print(Panel.fit((
-                f"[bold]Settings file[/] is located at '[bold cyan]{settings_file}[/]'\n"
-                f"[bold]Profiles file[/] is located at '[bold cyan]{profiles_file}[/]'"
-            )))
+            console.print(
+                Panel.fit(
+                    f"[bold]Settings file[/]: [cyan]{settings_file}[/]\n"
+                    f"[bold]Profiles file[/]: [cyan]{profiles_file}[/]"
+                )
+            )
             return
 
         choices = [settings_file, profiles_file]
 
-        console.print(Panel.fit((
-            f"[bold cyan][1][/] [bold]Settings[/]: '[bold cyan]{settings_file}[/]'\n"
-            f"[bold cyan][1][/] [bold]Profiles[/]: '[bold cyan]{profiles_file}[/]'"
-        )))
+        console.print(
+            Panel.fit(
+                f"[bold cyan][1][/] Settings file: {settings_file}\n"
+                f"[bold cyan][2][/] Profiles file: {profiles_file}",
+                title="File Locations",
+            )
+        )
 
-        choice = get_choice_by_idx("[bold]Copy a filepath[/]", choices)
+        choice = get_choice_by_idx("Copy file path", choices)
         if choice:
             pyperclip.copy(choice)
-
+            console.print("[green]Path copied to clipboard.[/]")
 
     app.add_typer(profile_app)
-
-
 
