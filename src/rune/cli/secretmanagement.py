@@ -17,6 +17,7 @@ NAME_HELP = (
 FIELDS_HELP = (
     "Comma-separated fields to store. You can provide `key=value` pairs "
     "for known values. Fields without a value will be queried securely.\n"
+    "If omitted, will store a single-field secret where the field has the same name as the secret.\n"
     "Example: -f host=localhost,port=9999,user,password"
 )
 
@@ -34,7 +35,7 @@ KEY_HELP_UPDATE = (
 def setup(app: Typer):
 
     @app.command()
-    def add(_fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
+    def add(_fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
             _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
             _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None):
         """
@@ -57,7 +58,7 @@ def setup(app: Typer):
         handle_delete_command(active_user, _name)
 
     @app.command()
-    def update(_fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
+    def update(_fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
                _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
                _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP_UPDATE)] = None):
         """

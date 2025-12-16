@@ -1,7 +1,5 @@
 from typing import Tuple, Dict
 
-from rich.console import Console
-from rich.panel import Panel
 from rune.context import Context
 from rich.prompt import Prompt
 
@@ -25,6 +23,9 @@ def sanitize_name(full_name: str) -> str:
         raise BadInputError(f"Not valid name. Please input a '/'-separated name. [bold]Ex: db/prod/service[/]")
     return full_name.removeprefix("/").removesuffix("/")
 
+def get_last_part_of_name(full_name: str) -> str:
+    return full_name.split("/")[-1]
+
 def split_name_and_ns(n_and_ns: str) -> Tuple[str, Namespace]:
     s = n_and_ns.split("/")
     return s[-1], Namespace(s[:-1])
@@ -32,8 +33,9 @@ def split_name_and_ns(n_and_ns: str) -> Tuple[str, Namespace]:
 def get_secret_input(name: str) -> str:
     return Prompt.ask(f"Value for field '[bold]{name}[/]'", password=True)
 
-def get_fields_dict(fields: str) -> Dict[str, str]:
+def get_fields_dict(fields: str | None, name: str) -> Dict[str, str]:
     ret = {}
+    fields = fields or name.split("/")[-1]
     for field in fields.split(","):
         split = field.split("=")
         if len(split) == 1:

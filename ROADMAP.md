@@ -26,8 +26,10 @@
 ## Phase 1 - Ergonomic improvements (v0.6.0)
 - [ ] Introduce command:
     - [ ] move (move a secret from one place to another)
-- [ ] More easily create secrets with only 1 field
-    - [ ] No need to specify `--fields` for 1-field secrets
+- [x] More easily create secrets with only 1 field
+    - [x] No need to specify `--fields` for 1-field secrets
+- [ ] Store config profiles for easy switching.
+    - [ ] `rune config profile <profile>`
 - [ ] Delete requires extra confirmation
 - [ ] Introduce soft delete (hide)
 - [ ] Introduce undelete for soft deleted secrets
