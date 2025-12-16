@@ -16,17 +16,16 @@ class SettingsStorageManager:
         self._ensure_settings()
 
     def _ensure_settings(self) -> None:
-        if not os.path.exists(self.settings_file):
-            os.makedirs(self.settings_file.parent, exist_ok=True)
-            with open(self.settings_file, "w") as f:
+        if not self.settings_file.exists():
+            self.settings_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.settings_file, "x") as f:
                 json.dump(Settings.default().to_dict(), f, indent=4)
 
     def _ensure_profiles(self) -> None:
-        if not os.path.exists(self.profiles_file):
-            os.makedirs(self.profiles_file.parent, exist_ok=True)
-            with open(self.profiles_file, "w") as f:
+        if not self.profiles_file.exists():
+            self.profiles_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.profiles_file, "x") as f:
                 json.dump({}, f, indent=4)
-
 
     def load_settings(self) -> Settings:
         with open(self.settings_file, "r") as f:
@@ -47,6 +46,11 @@ class SettingsStorageManager:
         profiles = self.get_profiles()
         profile: Settings | None = profiles.get(name)
         return profile if profile else None
+
+    def delete_profile(self, name: str) -> None:
+        profiles = self.get_profiles()
+        removed = {k: v for k, v in profiles.items() if not name == k}
+        self._store_profiles(removed)
 
     def save_profile(self, settings: Settings, name: str) -> None:
         profiles = self.get_profiles()

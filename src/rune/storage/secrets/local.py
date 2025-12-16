@@ -1,18 +1,19 @@
 from typing import Dict, Optional, List
 from rune.models.crypto.secret import Secret
 from rune.storage.secrets.base import StorageManager
-from json import load, dump
-import os
+import json
+from pathlib import Path
 
 class LocalJsonStorageManager(StorageManager):
-    def __init__(self, secrets_file_path: str) -> None:
-        self.__secrets_file_path = secrets_file_path
+    def __init__(self, secrets_file_path: Path) -> None:
+        self.__secrets_file_path: Path = secrets_file_path
         self._ensure_secrets()
 
     def _ensure_secrets(self) -> None:
-        if not os.path.exists(self.__secrets_file_path):
-            with open(self.__secrets_file_path, "w") as f:
-                dump({}, f, indent=4)
+        if not self.__secrets_file_path.exists():
+            self.__secrets_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.__secrets_file_path, "x") as f:
+                json.dump({}, f, indent=4)
 
     def store_secret(self, secret: Secret) -> bool:
         """
@@ -56,7 +57,7 @@ class LocalJsonStorageManager(StorageManager):
         Retrieves all entry names.
         """
         with open(self.__secrets_file_path, "r") as f:
-            d = load(f)
+            d = json.load(f)
             all_secrets = [ Secret.from_dict(v) for _, v in d.items() ]
             return [s for s in all_secrets if s.user == user]
 
@@ -65,7 +66,7 @@ class LocalJsonStorageManager(StorageManager):
         try:
             with open(self.__secrets_file_path, "w") as f:
                 to_dump = {s.id: s.to_dict() for s in secrets.values()}
-                dump(to_dump, f, indent=4)
+                json.dump(to_dump, f, indent=4)
                 return True
         except:
             return False

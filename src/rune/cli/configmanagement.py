@@ -2,14 +2,15 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.pretty import Pretty
-from rich.prompt import Prompt
 from typer import Argument, Typer, Option
 from typing import Annotated, Literal, Optional
+import pyperclip
+import typer
 
 from rune.context import Context
 from rune.models.settings.encryptionsettings import EncryptionSettings
 from rune.models.settings.storagesettings import FileBasedStorageSettings
-from rune.utils.input import get_int_or_quit, require
+from rune.utils.input import get_choice_by_idx, require
 
 STORAGE_MODE_HELP = "Configure how and where rune stores encrypted secrets."
 STORAGE_FILE_HELP = "Where to store secrets (file) if storage mode is 'local'"
@@ -49,12 +50,12 @@ def setup(app: Typer):
         if not interactive:
             return
 
-        choice = get_int_or_quit("Choose profile to activate")
+        choice = get_choice_by_idx("Choose profile to activate", profiles)
 
         if not choice:
             return
 
-        use_profile(profiles[choice - 1])
+        use_profile(choice)
 
 
     @profile_app.command(name="save")
@@ -89,9 +90,9 @@ def setup(app: Typer):
         _name: Annotated[str, Argument(help="The name for the profile to be used.")],
     ):
         """
-        Save the current settings to a profile.
+        Activate the specified profile.
 
-        Will fail if profile already exists, or override it if `--force`.
+        Will fail if profile does not exist.
         """
         context = Context.get()
         settings_manager = context.settings_manager
@@ -113,6 +114,36 @@ def setup(app: Typer):
         ))
         return
 
+    @profile_app.command(name="delete")
+    def delete_profile(
+        _name: Annotated[str, Argument(help="The name for the profile to be used.")],
+    ):
+        """
+        Delete the profile with the provided name.
+       
+        Will fail if the profile does not exist.
+        """
+        context = Context.get()
+        settings_manager = context.settings_manager
+
+        profile = settings_manager.get_profile(_name)
+
+        if not profile:
+            console.print(Panel.fit(
+                f"Profile '[bold cyan]{_name}[/]' does not exist.",
+                title="[red]Failed[/]"
+            ))
+            return
+
+        if typer.confirm(f"Are you sure you want to delete profile {_name}?"):
+            settings_manager.delete_profile(_name)
+            console.print(Panel.fit(
+                f"Profile [bold cyan]{_name}[/] was deleted.",
+                title="[green]Success[/]"
+            ))
+
+        else:
+            raise typer.Abort()
 
     @app.command(name="storage")
     def config_storage(
@@ -179,7 +210,7 @@ def setup(app: Typer):
             settings = context.settings.to_dict()
             console.print(f"[bold]Displaying [cyan]active[/cyan] settings:[/]")
             console.print(f"Settings file located at: [bold cyan]'{settings_file}'[/].")
-            console.print(Pretty(settings, expand_all=True, indent_guides=True))
+            console.print(Panel.fit(Pretty(settings, expand_all=True, indent_guides=True)))
             return
         
         settings = context.settings_manager.get_profile(profile)
@@ -192,7 +223,33 @@ def setup(app: Typer):
             return
 
         console.print(f"[bold]Displaying settings for profile '[cyan]{profile}[/cyan]':[/]")
-        console.print(Pretty(settings, expand_all=True, indent_guides=True))
+        console.print(Panel.fit(Pretty(settings.to_dict(), expand_all=True, indent_guides=True)))
+
+    @app.command(name="where")
+    def whereis(
+        interactive: Annotated[bool, Option("--interactive", "-i", help="If enabled, easily copy file paths.")] = False
+    ):
+        context = Context.get()
+        settings_file = str(context.settings_manager.settings_file.absolute())
+        profiles_file = str(context.settings_manager.profiles_file.absolute())
+        if not interactive:
+            console.print(Panel.fit((
+                f"[bold]Settings file[/] is located at '[bold cyan]{settings_file}[/]'\n"
+                f"[bold]Profiles file[/] is located at '[bold cyan]{profiles_file}[/]'"
+            )))
+            return
+
+        choices = [settings_file, profiles_file]
+
+        console.print(Panel.fit((
+            f"[bold cyan][1][/] [bold]Settings[/]: '[bold cyan]{settings_file}[/]'\n"
+            f"[bold cyan][1][/] [bold]Profiles[/]: '[bold cyan]{profiles_file}[/]'"
+        )))
+
+        choice = get_choice_by_idx("[bold]Copy a filepath[/]", choices)
+        if choice:
+            pyperclip.copy(choice)
+
 
     app.add_typer(profile_app)
 

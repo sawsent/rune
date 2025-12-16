@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import List, Tuple, Dict
 
 from rune.context import Context
 from rich.prompt import Prompt
@@ -57,18 +57,16 @@ def ensure_active_user() -> str:
 
     return maybe_user
 
-def get_int_or_quit(prompt: str) -> int | None:
+def get_choice_by_idx[T](prompt: str, elements: List[T]) -> T | None:
     while True:
         choice = Prompt.ask(f"{prompt} (q to quit)")
         if choice.lower() == "q":
             return None
         try:
             idx = int(choice)
-            return idx
+            return elements[idx - 1]
         except:
             continue
-
-
 
 def require[T](arg: T | None, reason: str = "") -> T:
     if arg is None:
