@@ -36,6 +36,20 @@ class LocalJsonStorageManager(StorageManager):
         secrets = self.stored_secrets_by_full_name(user)
         return secrets.get(name)
 
+    def move_secret(self, user: str, original_name: str, new_name: str) -> bool:
+        """
+        Moves a secret from one name to another. Does not change encryption.
+        """
+        original = self.retreive_secret(user, original_name)
+        if not original:
+            return False
+
+        new_secret = original.update(full_name=new_name)
+        updated = {k: v for k, v in self.stored_secrets_by_full_name(user).items() if not k == original_name}
+        updated[new_name] = new_secret
+
+        return self.store_secrets(updated)
+
     def delete_secret(self, user: str, name: str) -> bool:
         """
         Deletes the entry with the provided name.

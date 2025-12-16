@@ -4,6 +4,7 @@ from typer import Typer
 
 from rune.commands.addcmd import handle_add_cmd
 from rune.commands.getcmd import handle_get_command
+from rune.commands.movecmd import handle_move_command
 from rune.commands.updatecmd import handle_update_command
 from rune.commands.deletecmd import handle_delete_command
 from rune.commands.listcmd import handle_ls_command
@@ -87,6 +88,17 @@ def setup(app: Typer):
             handle_ls_command(active_user, namespace=None, interactive=True, show=show)
         else:
             handle_get_command(active_user, _name, _key, show)
+
+    OG_NAME_HELP = "Full name of secret to move"
+    DEST_NAME_HELP = "Destination name for the secret"
+    @app.command(name="move")
+    def move(_original_name: Annotated[Optional[str], typer.Argument(help=OG_NAME_HELP)] = None,
+             _new_name: Annotated[Optional[str], typer.Argument(help=DEST_NAME_HELP)] = None):
+        """
+        Move a secret from one name to another.
+        """
+        active_user = ensure_active_user()
+        handle_move_command(active_user, _original_name, _new_name)
 
     @app.command(name="ls")
     def list_entries(namespace: Annotated[Optional[str], typer.Option("--namespace", "-ns", help="Filter secrets by namespace")] = None,

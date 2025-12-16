@@ -17,7 +17,6 @@ def get_secret(user: str, full_name: str, key: str) -> Result[Dict[str, str]]:
     """
     storage = Context.get().storage_manager
 
-
     try:
         secret = storage.retreive_secret(user, full_name)
         if secret is not None:

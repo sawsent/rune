@@ -24,6 +24,13 @@ class StorageManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def move_secret(self, user: str, original_name: str, new_name: str) -> bool:
+        """
+        Moves a secret from one name to another. Does not change encryption.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     def delete_secret(self, user: str, name: str) -> bool:
         """
         Deletes the entry with the provided name for the provided user.

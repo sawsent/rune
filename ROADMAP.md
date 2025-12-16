@@ -24,8 +24,8 @@
 - [x] No architectural blockers for future expansion
 
 ## Phase 1 - Ergonomic improvements (v0.6.0)
-- [ ] Introduce command:
-    - [ ] move (move a secret from one place to another)
+- [x] Introduce command:
+    - [x] move (move a secret from one place to another)
 - [x] More easily create secrets with only 1 field
     - [x] No need to specify `--fields` for 1-field secrets
 - [x] Store config profiles for easy switching. Where to easily access important files.
