@@ -1,8 +1,7 @@
 from rich.console import Console
 from rich.panel import Panel
 import typer
-from rune.cli import configmanagement, secretmanagement, sessionmanagement
-from rune.cli import accountmanagement
+from rune.cli import configmanagement, secretmanagement, usermanagement
 from rune.context import Context
 from rune.exception.badinput import BadInputError
 
@@ -13,7 +12,7 @@ def main():
     config_app = typer.Typer(name="config", help="Manage rune configs. Run `rune config -h` for more help.")
 
     secretmanagement.setup(app)
-    accountmanagement.setup(app)
+    usermanagement.setup(app)
     configmanagement.setup(config_app)
 
     app.add_typer(config_app)
@@ -35,6 +34,8 @@ def main():
         shutdown()
 
 def shutdown():
-    Context.get().settings_manager.save_settings(Context.get().settings)
+    settings = Context.get().settings
+    if settings._dirty:
+        Context.get().settings_manager.save_settings(Context.get().settings)
 
 

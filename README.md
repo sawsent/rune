@@ -1,203 +1,133 @@
-# Rune — Encrypted Local Secret Vault (CLI)
+# rune
 
-Rune is a tiny, dependency-light CLI tool for storing secrets locally on your machine.
-Secrets are organized by name and optional namespaces, and can be copied to clipboard securely without printing them to the terminal.
-
----
-
-## **Features**
-- Store secrets with any number of fields (`host`, `user`, `password`, etc.)
-- Organize secrets in namespaces (`db/prod/mydb`)
-- AES-GCM encryption (or plaintext mode)
-- Secure prompts (values are hidden)
-- Retrieve secrets interactively
-- Copy secrets directly to the clipboard without revealing them
-- Minimal configuration
-- Simple JSON-based storage
+rune is a secure, local-first secrets management tool designed for developers.
+It allows you to store, retrieve, and manage secrets easily while keeping them encrypted client-side.
 
 ---
 
-## **Installation**
+## Features
 
-```sh
+- Fully local-first, zero-trust CLI
+- Per-secret encryption keys
+- Namespaced secrets (`db/prod/my-db`)
+- Interactive secret entry and retrieval
+- Cross-platform (Linux, macOS, Windows)
+
+---
+
+## Installation
+
+```bash
 pip install rune
 ```
 
 ---
 
-## **Basic Usage**
+## Getting Started
 
-### **Add a secret**
-```sh
-rune add -n db/prod/mydb -f host,port,user,password
+### Login / Logout
+
+Before performing any secret operations, you must be logged in. At this stage, login simply sets the active username:
+
+```bash
+# Log in as a user
+rune login <username>
+
+# Log out
+rune logout
 ```
 
-You will be prompted *securely* for each field value and for the encryption key (unless provided).
+> Note: Currently login only selects the active username which determines access to secret namespaces.
 
 ---
 
-## **Names & Namespaces**
+### Adding Secrets
 
-You can provide namespaces using slashes:
-
-```
-db/prod/mydb
-└─ namespace: db/prod
-└─ name:      mydb
+```bash
+rune add -f host=localhost,port,user,password -n db/prod/my-db
 ```
 
-Rune automatically splits these internally.
+- `-f / --fields` → Comma-separated list of fields. Fields without a value will be prompted securely.
+- `-n / --name` → Name of the secret. Supports namespaces using `/`.
+- `-k / --key` → Optional encryption key.
 
 ---
 
-## **Commands**
+### Retrieving Secrets
 
-### `add`
-Add a new secret.
-
-```sh
-rune add -f field1,field2,... [-n name] [-k key]
+```bash
+rune get -n db/prod/my-db
 ```
 
-Example:
-
-```sh
-rune add -f username,password -n github/personal
-```
+- Copies a chosen field to the clipboard by default.
+- Use `--show` to display secret values in the terminal.
+- `--interactive` triggers an interactive list selection (shortcut for `rune ls -i`).
 
 ---
 
-### `get`
-Retrieve a secret (copies to clipboard).
+### Listing Secrets
 
-```sh
-rune get -n github/personal
-```
-
-This **does NOT print the secret** unless you add:
-
-```sh
---show
-```
-
-Example:
-
-```sh
-$ rune get -n github/personal
-[1] - username
-[2] - password
-Select field to copy (q to cancel):
-```
-
-Pick a number, and that field is copied to the clipboard.
-
----
-
-### `update`
-Modify an existing secret.
-
-```sh
-rune update -f user,password -n github/personal
-```
-
-Only the specified fields are updated.
-
----
-
-### `delete`
-Delete a secret.
-
-```sh
-rune delete -n github/personal
-```
-
----
-
-### `ls`
-List all secrets.
-
-```sh
+```bash
 rune ls
 ```
 
-Example output:
-
-```
-[1] db/prod/mydb
-[2] github/personal
-[3] redis/dev/cache
-```
-
-#### **Interactive Mode**
-
-```sh
-rune ls -i
-```
-
-Lets you select an entry and directly open it via `get`.
+- Lists all secrets, organized by namespace.
+- Single-child namespaces are collapsed for cleaner display.
+- Use `--namespace <name>` to filter results.
+- Use `--interactive` to fetch a secret directly from the list.
+- Use `--show` to reveal values when in interactive mode.
 
 ---
 
-### `config`
-Configure Rune’s behavior.
+### Updating Secrets
 
-```sh
-rune config [--encryption aesgcm|no-encryption] [--storage-mode local] [--secrets-file path]
+```bash
+rune update -f password,newpass -n db/prod/my-db
 ```
 
-Examples:
-
-Set encryption mode:
-
-```sh
-rune config -e aesgcm
-```
-
-Change secrets location:
-
-```sh
-rune config -f ~/.mysecrets.json
-```
+- Updates existing fields or adds new ones.
+- Fields without a value will be prompted securely.
 
 ---
 
-### `whereis`
-Display paths to the settings file and secrets file:
+### Deleting Secrets
 
-```sh
-rune whereis
+```bash
+rune delete -n db/prod/my-db
 ```
 
-Example output:
+- Removes a secret from the vault.
+- Will prompt for secret name if omitted.
 
-```
-settings: /home/user/.config/rune/settings.json
-secrets:  /home/user/.local/share/rune/secrets.json
+---
+
+### Configuration
+
+Rune CLI supports configuring storage and encryption options:
+
+```bash
+rune config show          # Display current config
+rune config storage       # Set storage options (local file path)
+rune config encryption    # Set encryption mode (currently `aesgcm`)
 ```
 
 ---
 
-## **Clipboard Behavior**
-Rune uses `pyperclip` to copy retrieved secrets directly to your clipboard.
+## Storage & Encryption
 
-- Nothing is displayed unless `--show` is used.
-- You must select the field to copy.
-- Copying is interactive to avoid accidental exposure.
-
----
-
-## **Storage**
-Rune stores:
-
-- encrypted (or plaintext) secrets  
-- user configuration (settings)
-
-in JSON files in your user directory.  
-Use `rune whereis` to locate them.
+- Secrets are stored locally in JSON format (default).
+- Fully client-side encrypted. (Decrypted text never leaves memory)
+- Per-secret encryption keys are supported.
 
 ---
 
-## **License**
-Apache 2.0.  
-See `LICENSE` file.
+## Roadmap
+
+See [ROADMAP.md](./ROADMAP.md) for the full development roadmap.
+
+---
+
+## License
+
+Apache 2.0
 

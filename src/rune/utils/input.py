@@ -21,7 +21,9 @@ def input_default_key() -> str:
     return Prompt.ask("The [bold]default key[/] for this session")
 
 def sanitize_name(full_name: str) -> str:
-    return full_name
+    if "//" in full_name:
+        raise BadInputError(f"Not valid name. Please input a '/'-separated name. [bold]Ex: db/prod/service[/]")
+    return full_name.removeprefix("/").removesuffix("/")
 
 def split_name_and_ns(n_and_ns: str) -> Tuple[str, Namespace]:
     s = n_and_ns.split("/")
@@ -49,11 +51,7 @@ def get_active_user() -> str | None:
 def ensure_active_user() -> str:
     maybe_user = get_active_user()
     if not maybe_user:
-        console = Console()
-        console.print(Panel.fit(
-            "[bold red]User not set.[/] Please log in with [bold]`rune login -u <username>`[/]"
-        ))
-        raise RuntimeError("User not set.")
+        raise BadInputError("[bold red]User not set.[/] Please log in with [bold]`rune login -u <username>`[/]")
 
     return maybe_user
 

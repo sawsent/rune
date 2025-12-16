@@ -2,8 +2,6 @@ from typing import Annotated, Optional
 import typer
 from typer import Typer
 
-from rune.commands.logincmd import handle_login_command, handle_logout_command
-from rune.context import Context
 from rune.commands.addcmd import handle_add_cmd
 from rune.commands.getcmd import handle_get_command
 from rune.commands.updatecmd import handle_update_command
@@ -12,88 +10,93 @@ from rune.commands.listcmd import handle_ls_command
 from rune.utils.input import ensure_active_user
 
 NAME_HELP = (
-    "The name of the new secret.\n"
-        "Supports namespaces (e.g. `db/prod/my-db`). If omitted, you'll be prompted."
+    "The name of the secret. Supports namespaces (e.g., `db/prod/my-db`). "
+    "If omitted, you will be prompted."
 )
 
 FIELDS_HELP = (
-    "Fields to store, comma-separated. Example: `-f host=localhost,port=9999,user,password`.\n"
-        "Each field will be queried securely if not provided."
+    "Comma-separated fields to store. You can provide `key=value` pairs "
+    "for known values. Fields without a value will be queried securely.\n"
+    "Example: -f host=localhost,port=9999,user,password"
 )
 
-KEY_HELP = "Encryption key (if omitted, will be securely prompted)."
+KEY_HELP = (
+    "Encryption key to use. If omitted, the active session key will be used (if available).\n"
+    "If no active session key is found, it will be queried securely."
+)
+
+KEY_HELP_UPDATE = (
+    "Encryption key to use. Should be the same as the one used to originally encrypt the secret\n"
+    "If omitted, the active session key will be used (if available).\n"
+    "If no active session key is found, it will be queried securely."
+)
 
 def setup(app: Typer):
 
     @app.command()
-    def add(
-        _fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
-        _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-    ):
+    def add(_fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
+            _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
+            _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None):
         """
-        Add a secret to the rune vault.
+        Add a new secret to the vault.
+
+        Supports namespaced secrets. Fields without explicit values
+        will be prompted securely.
         """
-        _active_user = ensure_active_user()
-        handle_add_cmd(_active_user, _fields, _name, _key)
+        active_user = ensure_active_user()
+        handle_add_cmd(active_user, _fields, _name, _key)
         
     @app.command()
-    def delete(
-        _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None
-    ):
+    def delete(_name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None):
         """
-        Removes a secret from the rune vault.
+        Delete a secret from the vault.
+
+        You will be prompted if the name is omitted.
         """
-        _active_user = ensure_active_user()
-        handle_delete_command(_active_user, _name)
+        active_user = ensure_active_user()
+        handle_delete_command(active_user, _name)
 
     @app.command()
-    def update(
-        _fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
-        _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-    ):
+    def update(_fields: Annotated[str, typer.Option("--fields", "-f", help=FIELDS_HELP)],
+               _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
+               _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP_UPDATE)] = None):
         """
-        Update an existing secret in the rune vault.
+        Update an existing secret in the vault.
+
+        Fields without explicit values will be prompted securely.
         """
-        _active_user = ensure_active_user()
-        handle_update_command(_active_user, _fields, _name, _key)
+        active_user = ensure_active_user()
+        handle_update_command(active_user, _fields, _name, _key)
 
     @app.command()
-    def get(
-        _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-        interactive: Annotated[bool, typer.Option(
-            "--interactive", "-i",
-            help="Interactively select and retrieve secrets from the list. (same as running `rune ls -i`). Name and key are discarded."
-        )] = False,
-        show: Annotated[bool, typer.Option("--show","-s",help="Show the secret values instead of hiding them.")] = False,
-    ):
+    def get(_name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
+            _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
+            interactive: Annotated[bool, typer.Option(
+                "--interactive", "-i",
+                help="Shortcut for `rune ls -i`. Name and key are ignored when using interactive."
+            )] = False,
+            show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False):
         """
-        Retrieve a secret from the rune vault.
+        Retrieve a secret from the vault.
 
-        Copies the selected field to clipboard.
-        Use --show to display field values in the terminal.
+        Copies the selected field to clipboard by default.
         """
-        _active_user = ensure_active_user()
+        active_user = ensure_active_user()
         if interactive:
-            handle_ls_command(_active_user, None, interactive, show)
+            handle_ls_command(active_user, namespace=None, interactive=True, show=show)
         else:
-            handle_get_command(_active_user, _name, _key, show)
+            handle_get_command(active_user, _name, _key, show)
 
     @app.command(name="ls")
-    def list_entries(
-        namespace: Annotated[Optional[str], typer.Option("--namespace", "-ns", help="Filter the shown secrets by namespace")] = None,
-        interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False,
-        show: Annotated[bool, typer.Option(
-            "--show","-s",
-            help="Show the secret values instead of hiding them. Only used when running with the --interactive flag."
-        )] = False,
-    ):
+    def list_entries(namespace: Annotated[Optional[str], typer.Option("--namespace", "-ns", help="Filter secrets by namespace")] = None,
+                     interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False,
+                     show: Annotated[bool, typer.Option("--show","-s", help="Show secret values in the terminal. Only used with --interactive.")]=False):
         """
-        Lists all secrets in the rune vault, organized by namespace.
-        Collapses single-child namespaces for cleaner display.
+        List all secrets in the vault for the logged in user, organized by namespace.
+
+        Single-child namespaces are collapsed for cleaner display.
+        Use `--namespace` to filter results.
         """
-        _active_user = ensure_active_user()
-        handle_ls_command(_active_user, namespace, interactive, show)
+        active_user = ensure_active_user()
+        handle_ls_command(active_user, namespace, interactive, show)
 

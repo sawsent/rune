@@ -11,6 +11,8 @@ class Settings:
     storage: StorageSettings
     active_user: Optional[str]
 
+    _dirty: bool = False
+
     def to_dict(self) -> Dict:
         ret: Dict = {
             "encryption": self.encryption.to_dict(),
@@ -24,8 +26,10 @@ class Settings:
         self.encryption = encryption or self.encryption
         self.storage = storage or self.storage
         self.active_user = active_user or self.active_user
+        self._dirty = True
 
     def reset(self, encryption: bool = False, storage: bool = False, active_user: bool = False) -> None:
+        self._dirty = True
         default = self.default()
         if encryption:  self.encryption = default.encryption
         if storage:     self.storage = default.storage

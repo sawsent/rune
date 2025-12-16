@@ -10,7 +10,7 @@ class Context:
     _context: Self | None = None
 
     def __init__(
-            self,
+        self,
         settings_manager: SettingsStorageManager | None,
         encrypter: Encrypter | None,
         storage_manager: StorageManager | None

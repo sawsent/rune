@@ -8,13 +8,12 @@ from typing import Annotated, Literal, Optional
 from rune.context import Context
 from rune.models.settings.encryptionsettings import EncryptionSettings
 from rune.models.settings.storagesettings import FileBasedStorageSettings
-from rune.utils.formatting import dict_to_rich_tree
 from rune.utils.input import require
 
-STORAGE_MODE_HELP = "Storage mode."
+STORAGE_MODE_HELP = "Configure how and where rune stores encrypted secrets."
 STORAGE_FILE_HELP = "Where to store secrets (file) if storage mode is 'local'"
 
-ENCRYPTION_MODE_HELP = "Encryption mode."
+ENCRYPTION_MODE_HELP = "Configure how and where rune stores encrypted secrets."
 
 console = Console()
 
@@ -47,11 +46,13 @@ def setup(app: Typer):
         if mode == "local":
             file = require(_file, "File is required if configured mode is 'local'")
             path = Path(file)
-            new_settings = FileBasedStorageSettings(str(path.absolute()))
+            storage_path = str(path.expanduser().absolute())
+            new_settings = FileBasedStorageSettings(storage_path)
             context.settings.update(storage=new_settings)
 
             console.print(Panel.fit(
-                f"Changed storage file to [bold]'{str(path.absolute())}'[/].",
+                f"Changed storage file to [bold]'{storage_path}'[/].\n"
+                "[dim]Note: Existing secrets are not re-encrypted.[/]",
                 title="Storage file changed"
             ))
 
@@ -80,8 +81,4 @@ def setup(app: Typer):
             f"Changed encryption mode to [bold]'{mode}'[/].",
             title="Encryption mode changed."
         ))
-
-
-        
-
 
