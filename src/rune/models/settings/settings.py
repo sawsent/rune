@@ -35,6 +35,10 @@ class Settings:
         if storage:     self.storage = default.storage
         if active_user: self.active_user = default.active_user
 
+    def dirty(self) -> Self:
+        self._dirty = True
+        return self
+
     @classmethod
     def from_dict(cls, d: Dict) -> Self:
         return cls(

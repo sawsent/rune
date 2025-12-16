@@ -57,6 +57,18 @@ def ensure_active_user() -> str:
 
     return maybe_user
 
+def get_int_or_quit(prompt: str) -> int | None:
+    while True:
+        choice = Prompt.ask(f"{prompt} (q to quit)")
+        if choice.lower() == "q":
+            return None
+        try:
+            idx = int(choice)
+            return idx
+        except:
+            continue
+
+
 
 def require[T](arg: T | None, reason: str = "") -> T:
     if arg is None:

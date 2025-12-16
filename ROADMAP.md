@@ -28,8 +28,10 @@
     - [ ] move (move a secret from one place to another)
 - [x] More easily create secrets with only 1 field
     - [x] No need to specify `--fields` for 1-field secrets
-- [ ] Store config profiles for easy switching.
-    - [ ] `rune config profile <profile>`
+- [x] Store config profiles for easy switching.
+    - [x] `rune config profile save <profile name>`
+    - [x] `rune config profile use <profile name>`
+    - [x] `rune config profile list`
 - [ ] Delete requires extra confirmation
 - [ ] Introduce soft delete (hide)
 - [ ] Introduce undelete for soft deleted secrets
