@@ -10,7 +10,7 @@ import typer
 
 console = Console()
 
-def handle_ls_command(user: str, namespace: str | None, interactive: bool, show: bool):
+def handle_ls_command(user: str, namespace: str | None, interactive: bool, show: bool, show_deleted: bool):
     result = list_secrets(user)
     secrets = result.value()
 
@@ -24,8 +24,23 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
     if not secrets:
         console.print("[yellow]No secrets yet.[/]")
         return
+    
+    if show_deleted:
+        full_names = []
+        for secret in secrets:
+            fn = secret.full_name
+            if secret.deleted:
+                parts = fn.split("/")
+                parts[-1] = parts[-1] + " (deleted)"
+                full_names.append("/".join(parts))
+            else:
+                full_names.append(fn)
+    else:
+        full_names = [secret.full_name for secret in secrets if not secret.deleted]
 
-    full_names = [secret.full_name for secret in secrets]
+    if not full_names:
+        console.print("[yellow]No secrets yet.[/]")
+        return
 
     names_tree = _build_namespace_tree(full_names)
 
@@ -94,7 +109,7 @@ def _expand_rich_tree(tree: Tree, node: dict, sorted_item_list: List[str] = [], 
     """Recursively expand the namespace tree into a Rich Tree."""
     items = node.get("__items__", [])
     for item in items:
-        tree.add(f"[bold cyan][{len(sorted_item_list) + 1}][/] {item}")
+        tree.add(f"[bold cyan][{len(sorted_item_list) + 1}][/] {item.replace("(deleted)", "[bold red][DELETED][/]")}")
         full_name = item if current_path is None else current_path + "/" + item
         sorted_item_list.append(full_name)
 

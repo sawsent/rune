@@ -17,6 +17,7 @@ class Secret:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    deleted: bool = False
 
     version: int = 1
 
@@ -53,6 +54,14 @@ class Secret:
     def namespace(self) -> Namespace:
         return Namespace(self.name_parts[:-1])
 
+    def soft_delete(self) -> Self:
+        self.deleted = True
+        return self
+
+    def restore(self) -> Self:
+        self.deleted = False
+        return self
+
     def to_dict(self) -> Dict:
         return {
             "id": self.id,
@@ -64,7 +73,8 @@ class Secret:
             "metadata": self.metadata,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
-            "version": self.version
+            "version": self.version,
+            "deleted": self.deleted
         }
 
     @classmethod
@@ -80,6 +90,7 @@ class Secret:
             metadata=data.get("metadata", {}),
             created_at=datetime.fromisoformat(data.get("created_at", datetime.now().isoformat())),
             updated_at=datetime.fromisoformat(data.get("updated_at", datetime.now().isoformat())),
-            version=data.get("version", 1)
+            version=data.get("version", 1),
+            deleted=data.get("deleted", False)
         )
 

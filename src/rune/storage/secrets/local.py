@@ -50,7 +50,7 @@ class LocalJsonStorageManager(StorageManager):
 
         return self.store_secrets(updated)
 
-    def delete_secret(self, user: str, name: str) -> bool:
+    def delete_secret(self, user: str, name: str, hard: bool) -> bool:
         """
         Deletes the entry with the provided name.
 
@@ -58,12 +58,29 @@ class LocalJsonStorageManager(StorageManager):
         Raises NotFoundError if it fails to find a secrets file.
         """
         secrets = self.stored_secrets_by_full_name(user)
+
         if not name in secrets:
             return False
         
-        removed = {n: s for n, s in secrets.items() if not n == name}
+        if hard:
+            secrets = {n: s for n, s in secrets.items() if not n == name}
+        else:
+            secrets[name] = secrets[name].soft_delete()
 
-        return self.store_secrets(removed)
+        return self.store_secrets(secrets)
+
+    def restore_secret(self, user: str, name: str) -> bool:
+        """
+        Restores a soft deleted secret (makes it not soft deleted)
+        """
+        secrets = self.stored_secrets_by_full_name(user)
+
+        to_store = secrets.get(name)
+
+        if to_store and to_store.deleted:
+            return self.store_secret(to_store.restore())
+        
+        return False
 
 
     def get_all_secrets(self, user: str) -> List[Secret]:

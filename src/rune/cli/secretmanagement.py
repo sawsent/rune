@@ -6,7 +6,7 @@ from rune.commands.addcmd import handle_add_cmd
 from rune.commands.getcmd import handle_get_command
 from rune.commands.movecmd import handle_move_command
 from rune.commands.updatecmd import handle_update_command
-from rune.commands.deletecmd import handle_delete_command
+from rune.commands.deletecmd import handle_delete_command, handle_restore_cmd
 from rune.commands.listcmd import handle_ls_command
 from rune.utils.input import ensure_active_user
 
@@ -36,9 +36,11 @@ KEY_HELP_UPDATE = (
 def setup(app: Typer):
 
     @app.command()
-    def add(_fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
-            _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-            _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None):
+    def add(
+        _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
+        _fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
+        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None
+    ):
         """
         Add a new secret to the vault.
 
@@ -47,21 +49,38 @@ def setup(app: Typer):
         """
         active_user = ensure_active_user()
         handle_add_cmd(active_user, _fields, _name, _key)
-        
+
     @app.command()
-    def delete(_name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None):
+    def delete(
+        _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
+        _hard: Annotated[bool, typer.Option("--hard", help="Hard delete the secret. Requires encryption key.")] = False,
+        _key: Annotated[Optional[str], typer.Option("--key", "-k", help="Key used to encrypt the secret. Required if `--hard`.")] = None,
+    ):
         """
         Delete a secret from the vault.
 
-        You will be prompted if the name is omitted.
+        Hard delete requires original encryption key.
         """
         active_user = ensure_active_user()
-        handle_delete_command(active_user, _name)
+        handle_delete_command(active_user, _hard, _name, _key)
 
     @app.command()
-    def update(_fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
-               _name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-               _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP_UPDATE)] = None):
+    def restore(
+        _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None
+    ):
+        """
+        Restore a soft deleted secret.
+        """
+        active_user = ensure_active_user()
+        handle_restore_cmd(active_user, _name)
+
+
+    @app.command()
+    def update(
+        _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
+        _fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
+        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP_UPDATE)] = None
+    ):
         """
         Update an existing secret in the vault.
 
@@ -71,13 +90,15 @@ def setup(app: Typer):
         handle_update_command(active_user, _fields, _name, _key)
 
     @app.command()
-    def get(_name: Annotated[Optional[str], typer.Option("--name", "-n", help=NAME_HELP)] = None,
-            _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-            interactive: Annotated[bool, typer.Option(
-                "--interactive", "-i",
-                help="Shortcut for `rune ls -i`. Name and key are ignored when using interactive."
-            )] = False,
-            show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False):
+    def get(
+        _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
+        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
+        interactive: Annotated[bool, typer.Option(
+            "--interactive", "-i",
+            help="Shortcut for `rune ls -i`. Name and key are ignored when using interactive."
+        )] = False,
+        show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False
+    ):
         """
         Retrieve a secret from the vault.
 
@@ -85,15 +106,17 @@ def setup(app: Typer):
         """
         active_user = ensure_active_user()
         if interactive:
-            handle_ls_command(active_user, namespace=None, interactive=True, show=show)
+            handle_ls_command(active_user, namespace=None, interactive=True, show=show, show_deleted=False)
         else:
             handle_get_command(active_user, _name, _key, show)
 
     OG_NAME_HELP = "Full name of secret to move"
     DEST_NAME_HELP = "Destination name for the secret"
     @app.command(name="move")
-    def move(_original_name: Annotated[Optional[str], typer.Argument(help=OG_NAME_HELP)] = None,
-             _new_name: Annotated[Optional[str], typer.Argument(help=DEST_NAME_HELP)] = None):
+    def move(
+        _original_name: Annotated[Optional[str], typer.Argument(help=OG_NAME_HELP)] = None,
+        _new_name: Annotated[Optional[str], typer.Argument(help=DEST_NAME_HELP)] = None
+    ):
         """
         Move a secret from one name to another.
         """
@@ -101,9 +124,12 @@ def setup(app: Typer):
         handle_move_command(active_user, _original_name, _new_name)
 
     @app.command(name="ls")
-    def list_entries(namespace: Annotated[Optional[str], typer.Option("--namespace", "-ns", help="Filter secrets by namespace")] = None,
-                     interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False,
-                     show: Annotated[bool, typer.Option("--show","-s", help="Show secret values in the terminal. Only used with --interactive.")]=False):
+    def list_entries(
+        namespace: Annotated[Optional[str], typer.Argument(help="Filter secrets by namespace")] = None,
+        interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False,
+        show: Annotated[bool, typer.Option("--show","-s", help="Show secret values in the terminal. Only used with --interactive.")]=False,
+        show_deleted: Annotated[bool, typer.Option("--show-deleted", help="Show soft deleted secrets.")] = False
+    ):
         """
         List all secrets in the vault for the logged in user, organized by namespace.
 
@@ -111,5 +137,5 @@ def setup(app: Typer):
         Use `--namespace` to filter results.
         """
         active_user = ensure_active_user()
-        handle_ls_command(active_user, namespace, interactive, show)
+        handle_ls_command(active_user, namespace, interactive, show, show_deleted)
 

@@ -1,7 +1,9 @@
 from rich.console import Console
 from rich.panel import Panel
+
 from rune.internal.add import add_secret
-from rune.utils.input import get_last_part_of_name, input_key, input_name, sanitize_name, get_fields_dict
+from rune.utils.input import input_key, input_name, sanitize_name, get_fields_dict
+from rune.utils import display
 
 console = Console()
 
@@ -13,18 +15,8 @@ def handle_add_cmd(user: str, _fields: str | None, _name: str | None, _key: str 
     result = add_secret(user, name, fields, key)
 
     if result.is_success():
-        console.print(
-            Panel.fit(
-                f"[bold green]✓ Stored new secret[/] [cyan]{name}[/]",
-                title="[green]Success[/]",
-            )
-        )
+        display.success_panel(f"[bold green]✓ Stored new secret[/] [cyan]{name}[/]")
     else:
-        console.print(
-            Panel.fit(
-                f"[bold red]Error:[/] {result.failure_reason()}",
-                title="[red]Failed[/]",
-            )
-        )
+        display.failed_panel(f"[bold red]Error:[/] {result.failure_reason()}")
 
 

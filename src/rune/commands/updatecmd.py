@@ -1,10 +1,6 @@
-from rich.console import Console
-from rich.panel import Panel
-
 from rune.internal.update import update_secret
 from rune.utils.input import input_key, input_name, sanitize_name, get_fields_dict
-
-console = Console()
+from rune.utils import display
 
 def handle_update_command(user: str, _fields: str | None, _name: str | None, _key: str | None):
 
@@ -14,18 +10,8 @@ def handle_update_command(user: str, _fields: str | None, _name: str | None, _ke
     result = update_secret(user, name, fields, key)
 
     if result.is_success():
-        console.print(
-            Panel.fit(
-                f"[bold green]✓ Updated secret[/] [cyan]{name}[/]",
-                title="[green]Success[/]",
-            )
-        )
+        display.success_panel(f"[bold green]Updated secret[/] [cyan]{name}[/]")
     else:
-        console.print(
-            Panel.fit(
-                f"[bold red]Error:[/] {result.failure_reason()}",
-                title="[red]Failed[/]",
-            )
-        )
+        display.failed_panel(f"[bold red]Error:[/] {result.failure_reason()}")
 
 

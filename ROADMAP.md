@@ -33,15 +33,15 @@
     - [x] `rune config profile use <profile name>`
     - [x] `rune config profile list`
     - [x] `rune config where`
-- [ ] Delete requires extra confirmation
-- [ ] Introduce soft delete (hide)
-- [ ] Introduce undelete for soft deleted secrets
-- [ ] Hard delete requires encryption key
+- [x] Delete requires extra confirmation
+- [x] Introduce soft delete (hide)
+- [x] Introduce undelete for soft deleted secrets
+- [x] Hard delete requires encryption key
 
 **Exit criteria**
-- [ ] More usable UX
-- [ ] No unwanted deletes
-- [ ] Soft and hard deletes
+- [x] More usable UX
+- [x] No unwanted deletes
+- [x] Soft and hard deletes
 
 ## Phase 2 — Default-Key & Sessions (v0.8.0)
 - [ ] Introduce default-key (session key) concept

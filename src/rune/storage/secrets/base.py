@@ -31,12 +31,19 @@ class StorageManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def delete_secret(self, user: str, name: str) -> bool:
+    def delete_secret(self, user: str, name: str, hard: bool) -> bool:
         """
         Deletes the entry with the provided name for the provided user.
 
         Returns True if successful, False if it fails.
         Raises NotFoundError if it fails to find a secrets file.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def restore_secret(self, user: str, name: str) -> bool:
+        """
+        Restores a soft deleted secret (makes it not soft deleted)
         """
         raise NotImplementedError()
 

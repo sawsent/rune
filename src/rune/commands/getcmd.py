@@ -1,5 +1,6 @@
 from rune.internal.get import get_secret
 from rune.utils.input import input_key, input_name, sanitize_name
+from rune.utils import display
 
 from rich.console import Console
 from rich.panel import Panel
@@ -17,12 +18,7 @@ def handle_get_command(user: str, _name: str | None = None, _key: str | None = N
     v = result.value()
 
     if not (result.is_success() and v):
-        console.print(
-            Panel.fit(
-                f"[bold red]Error:[/] {result.failure_reason()}",
-                title="[red]Failed[/]",
-            )
-        )
+        display.failed_panel(f"[bold red]Error:[/] {result.failure_reason()}")
         return
 
 
@@ -44,12 +40,7 @@ def handle_get_command(user: str, _name: str | None = None, _key: str | None = N
             if 0 <= index < len(keys):
                 selected_key = keys[index]
                 pyperclip.copy(v[selected_key])
-                console.print(
-                    Panel.fit(
-                        f"[bold green]✓ Copied[/] [yellow]{selected_key}[/] to clipboard",
-                        title="[green]Copied[/]",
-                    )
-                )
+                display.success_panel(f"[bold green]✓ Copied[/] [yellow]{selected_key}[/] to clipboard", title="Copied")
         except:
             pass
 

@@ -7,9 +7,9 @@ It allows you to store, retrieve, and manage secrets easily while keeping them e
 
 ## Features
 
-- Fully local-first, zero-trust CLI
+- zero-trust. Decrypted secrets never leave memory
 - Per-secret encryption keys
-- Namespaced secrets (`db/prod/my-db`)
+- Namespaced secrets (`db/prod/my-db`) for easy access
 - Interactive secret entry and retrieval
 - Cross-platform (Linux, macOS, Windows)
 
@@ -44,19 +44,28 @@ rune logout
 ### Adding Secrets
 
 ```bash
-rune add -f host=localhost,port,user,password -n db/prod/my-db
+rune add db/prod/my-db -f host=localhost,port,user,password -k super-secret-key
 ```
 
-- `-f / --fields` → Comma-separated list of fields. Fields without a value will be prompted securely.
-- `-n / --name` → Name of the secret. Supports namespaces using `/`.
-- `-k / --key` → Optional encryption key.
+- Name of the secret. Supports namespaces using `/`.
+- `-f / --fields`
+    - Comma-separated list of fields. Fields without a value will be prompted securely.
+    - If ommitted, store a single-field secret.
+- `-k / --key` → Optional encryption key (prompted secretly if not specified)
 
 ---
 
 ### Retrieving Secrets
 
 ```bash
-rune get -n db/prod/my-db
+rune get db/prod/my-db
+
+# result
+[1] localhost
+[2] port
+[3] user
+[4] password
+Choose a field to copy (q to cancel):
 ```
 
 - Copies a chosen field to the clipboard by default.
@@ -73,7 +82,7 @@ rune ls
 
 - Lists all secrets, organized by namespace.
 - Single-child namespaces are collapsed for cleaner display.
-- Use `--namespace <name>` to filter results.
+- Use `<namespace>` argument to filter results.
 - Use `--interactive` to fetch a secret directly from the list.
 - Use `--show` to reveal values when in interactive mode.
 
@@ -82,7 +91,7 @@ rune ls
 ### Updating Secrets
 
 ```bash
-rune update -f password,newpass -n db/prod/my-db
+rune update db/prod/my-db -f user=new-user,password
 ```
 
 - Updates existing fields or adds new ones.
@@ -90,16 +99,38 @@ rune update -f password,newpass -n db/prod/my-db
 
 ---
 
+### Moving Secrets
+
+```bash
+rune move db/prod/my-db db/prod/cassandra
+```
+
+- Moves a secret from one name to another.
+
+---
+
 ### Deleting Secrets
 
 ```bash
-rune delete -n db/prod/my-db
+rune delete db/prod/cassandra
 ```
 
 - Removes a secret from the vault.
-- Will prompt for secret name if omitted.
+- Use `--hard` to remove the secret from persistence.
+- When hard deleting secrets, encryption key is required.
 
 ---
+
+### Restoring Secrets
+
+```bash
+rune restore db/prod/cassandra
+```
+
+- Restores a soft-deleted secret to the vault.
+
+---
+
 
 ### Configuration
 
@@ -110,6 +141,15 @@ rune config show          # Display current config
 rune config storage       # Set storage options (local file path)
 rune config encryption    # Set encryption mode (currently `aesgcm`)
 ```
+
+It also allows you to save and load profiles:
+
+```bash
+rune config profile save <profile-name>  # Save current settings to profile 
+rune config profile load <profile-name>  # Load a saved profile
+rune config profile list                 # Show saved profiles
+```
+
 
 ---
 
