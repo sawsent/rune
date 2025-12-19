@@ -11,6 +11,7 @@ from rune.context import Context
 from rune.models.settings.encryptionsettings import EncryptionSettings
 from rune.models.settings.storagesettings import FileBasedStorageSettings
 from rune.utils.input import get_choice_by_idx, require
+from rune.utils import display
 
 STORAGE_MODE_HELP = (
     "Configure how rune stores encrypted secrets.\n"
@@ -89,7 +90,7 @@ def setup(app: Typer):
         if not choice:
             return
 
-        use_profile(choice)
+        load_profile(choice)
 
     @profile_app.command(name="save")
     def save_profile(
@@ -122,15 +123,10 @@ def setup(app: Typer):
             return
 
         settings_manager.save_profile(context.settings, _name)
-        console.print(
-            Panel.fit(
-                f"Profile '[bold cyan]{_name}[/]' saved successfully.",
-                title="[green]Success[/]",
-            )
-        )
+        display.success_panel(f"Profile '[bold cyan]{_name}[/]' saved successfully.")
 
-    @profile_app.command(name="use")
-    def use_profile(
+    @profile_app.command(name="load")
+    def load_profile(
         _name: Annotated[
             str, Argument(help="Name of the profile to activate.")
         ],
@@ -143,23 +139,13 @@ def setup(app: Typer):
 
         settings = settings_manager.get_profile(_name)
         if not settings:
-            console.print(
-                Panel.fit(
-                    f"Profile '[bold cyan]{_name}[/]' does not exist.",
-                    title="[red]Failed[/]",
-                )
-            )
+            display.failed_panel(f"Profile '[bold cyan]{_name}[/]' does not exist.")
             return
 
         context.settings = settings.dirty()
         settings_manager.save_profile(settings, _name)
 
-        console.print(
-            Panel.fit(
-                f"Switched to profile '[bold cyan]{_name}[/]'.",
-                title="[green]Success[/]",
-            )
-        )
+        display.success_panel(f"Switched to profile '[bold cyan]{_name}[/]'.")
 
     @profile_app.command(name="delete")
     def delete_profile(
@@ -175,22 +161,13 @@ def setup(app: Typer):
 
         profile = settings_manager.get_profile(_name)
         if not profile:
-            console.print(
-                Panel.fit(
-                    f"Profile '[bold cyan]{_name}[/]' does not exist.",
-                    title="[red]Failed[/]",
-                )
-            )
+            display.failed_panel(f"Profile '[bold cyan]{_name}[/]' does not exist.")
             return
 
         if typer.confirm(f"Are you sure you want to delete profile '{_name}'?"):
             settings_manager.delete_profile(_name)
-            console.print(
-                Panel.fit(
-                    f"Profile '[bold cyan]{_name}[/]' deleted.",
-                    title="[green]Success[/]",
-                )
-            )
+            display.success_panel(f"Profile '[bold cyan]{_name}[/]' deleted.")
+
         else:
             raise typer.Abort()
 
@@ -241,24 +218,14 @@ def setup(app: Typer):
         context = Context.get()
 
         if mode == context.settings.encryption.mode:
-            console.print(
-                Panel.fit(
-                    f"Encryption mode is already set to '[bold]{mode}[/]'.",
-                    title="[red]No Change[/]",
-                )
-            )
+            display.failed_panel(f"Encryption mode is already set to '[bold]{mode}[/]'.", title="Nothing changed")
             return
 
         new_settings = EncryptionSettings.from_mode(mode)
         context.settings.update(encryption=new_settings)
 
-        console.print(
-            Panel.fit(
-                f"Encryption mode set to '[bold]{mode}[/]'.\n\n"
-                "[dim]Existing secrets remain encrypted with their original settings.[/]",
-                title="Encryption Updated",
-            )
-        )
+        display.success_panel(f"Encryption mode set to '[bold]{mode}[/]'.\n\n" +\
+                "[dim]Existing secrets remain encrypted with their original settings.[/]", title="Encryption Updated")
 
     @app.command(name="show")
     def show_config(
@@ -287,13 +254,9 @@ def setup(app: Typer):
             return
 
         settings = context.settings_manager.get_profile(profile)
+
         if not settings:
-            console.print(
-                Panel.fit(
-                    f"Profile '[bold cyan]{profile}[/]' does not exist.",
-                    title="[red]Failed[/]",
-                )
-            )
+            display.failed_panel(f"Profile '[bold cyan]{profile}[/]' does not exist.")
             return
 
         console.print(f"[bold]Configuration for profile '[cyan]{profile}[/]':[/]")
@@ -318,22 +281,18 @@ def setup(app: Typer):
         profiles_file = str(context.settings_manager.profiles_file.absolute())
 
         if not interactive:
-            console.print(
-                Panel.fit(
+            display.panel(
                     f"[bold]Settings file[/]: [cyan]{settings_file}[/]\n"
                     f"[bold]Profiles file[/]: [cyan]{profiles_file}[/]"
-                )
             )
             return
 
         choices = [settings_file, profiles_file]
 
-        console.print(
-            Panel.fit(
-                f"[bold cyan][1][/] Settings file: {settings_file}\n"
-                f"[bold cyan][2][/] Profiles file: {profiles_file}",
-                title="File Locations",
-            )
+        display.panel(
+            f"[bold cyan][1][/] Settings file: {settings_file}\n"
+            f"[bold cyan][2][/] Profiles file: {profiles_file}",
+            title="File Locations",
         )
 
         choice = get_choice_by_idx("Copy file path", choices)
