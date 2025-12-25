@@ -4,7 +4,7 @@ from typing import Optional
 
 class SessionManager(ABC):
     @abstractmethod
-    def start_session(self, default_password: Optional[str] = None, ttl_seconds: int = -1) -> None:
+    def start_session(self, user: str, session_key: str, ttl_seconds: int) -> None:
         """
         Starts a session.
         Session exists for the provided ttl. (-1 means it will not close)
@@ -30,28 +30,12 @@ class SessionManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def set_default_key(self, key: str) -> None:
-        """
-        Sets the default key for this session.
-
-        raises NoSessionError if the session does not exist.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
     def get_default_key(self) -> Optional[str]:
         """
         Retrieves the default key for this session.
         Returns None if the key is not set.
 
         Raises NoSessionError if the session does not exist.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def is_default_key_defined(self) -> bool:
-        """
-        Raises NoSessionError if the session does not exist
         """
         raise NotImplementedError()
 
