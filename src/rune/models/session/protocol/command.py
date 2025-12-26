@@ -10,6 +10,7 @@ class SessionCmd(ABC):
     END_SESSION: ClassVar[str] = "end"
     GET_SESSION_KEY: ClassVar[str] = "get"
     SESSION_STATUS: ClassVar[str] = "status"
+    HANDSHAKE: ClassVar[str] = "handshake"
 
     _registry: ClassVar[Dict[str, Type["SessionCmd"]]] = {}
 
@@ -30,6 +31,7 @@ class SessionCmd(ABC):
             case cls.END_SESSION: return EndSessionCmd.from_dict(d)
             case cls.GET_SESSION_KEY: return GetSessionKeyCmd.from_dict(d)
             case cls.SESSION_STATUS: return SessionStatusCmd.from_dict(d)
+            case cls.HANDSHAKE: return HandshakeCmd.from_dict(d)
 
         raise ValueError(f"Got unexpected command type: {d.get("type")}") from None
 
@@ -88,6 +90,17 @@ class GetSessionKeyCmd(SessionCmd):
 @dataclass
 class SessionStatusCmd(SessionCmd):
     CMD: ClassVar[str] = SessionCmd.SESSION_STATUS
+
+    def to_dict(self) -> Dict:
+        return {"type": self.CMD}
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> Self:
+        return cls()
+
+@dataclass
+class HandshakeCmd(SessionCmd):
+    CMD: ClassVar[str] = SessionCmd.HANDSHAKE
 
     def to_dict(self) -> Dict:
         return {"type": self.CMD}

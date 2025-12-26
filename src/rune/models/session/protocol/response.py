@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Dict, ClassVar, Type, Self
+from typing import Dict, ClassVar, Self
 
 
 class SessionResp(ABC):
@@ -9,8 +9,7 @@ class SessionResp(ABC):
     GET_KEY: ClassVar[str] = "get_key"
     SUCCESS: ClassVar[str] = "success"
     FAILURE: ClassVar[str] = "failure"
-
-    _registry: ClassVar[Dict[str, Type["SessionResp"]]] = {}
+    HANDSHAKE: ClassVar[str] = "handshake"
 
     RESP: ClassVar[str]
 
@@ -29,6 +28,7 @@ class SessionResp(ABC):
             case cls.GET_KEY: return GetKeyResponse.from_dict(d)
             case cls.SUCCESS: return SuccessResponse.from_dict(d)
             case cls.FAILURE: return FailureResponse.from_dict(d)
+            case cls.HANDSHAKE: return HandshakeResp.from_dict(d)
 
         raise ValueError(f"Got unexpected response type: {d.get("type")}") from None
 
@@ -42,15 +42,15 @@ class StatusResponse(SessionResp):
     def to_dict(self) -> Dict:
         return {
             "type": self.RESP,
-            "remaining_ttl": self.remaining_ttl,
-            "user": self.user,
+            "ttl": self.remaining_ttl,
+            "u": self.user,
         }
 
     @classmethod
     def from_dict(cls, d: Dict) -> Self:
         return cls(
-            remaining_ttl=d["remaining_ttl"],
-            user=d["user"],
+            remaining_ttl=d["ttl"],
+            user=d["u"],
         )
 
 
@@ -63,12 +63,12 @@ class GetKeyResponse(SessionResp):
     def to_dict(self) -> Dict:
         return {
             "type": self.RESP,
-            "session_key": self.session_key,
+            "sk": self.session_key,
         }
 
     @classmethod
     def from_dict(cls, d: Dict) -> Self:
-        return cls(d["session_key"])
+        return cls(d["sk"])
 
 
 class SuccessResponse(SessionResp):
@@ -80,12 +80,12 @@ class SuccessResponse(SessionResp):
     def to_dict(self) -> Dict:
         return {
             "type": self.RESP,
-            "message": self.message,
+            "msg": self.message,
         }
 
     @classmethod
     def from_dict(cls, d: Dict) -> Self:
-        return cls(d["message"])
+        return cls(d["msg"])
 
 
 class FailureResponse(SessionResp):
@@ -97,10 +97,26 @@ class FailureResponse(SessionResp):
     def to_dict(self) -> Dict:
         return {
             "type": self.RESP,
-            "message": self.message,
+            "msg": self.message,
         }
 
     @classmethod
     def from_dict(cls, d: Dict) -> Self:
-        return cls(d["message"])
+        return cls(d["msg"])
+
+class HandshakeResp(SessionResp):
+    RESP: ClassVar[str] = SessionResp.HANDSHAKE
+
+    def __init__(self, all_good: bool) -> None:
+        self.all_good = all_good
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": self.RESP,
+            "g": self.all_good
+        }
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> Self:
+        return cls(d["g"])
 

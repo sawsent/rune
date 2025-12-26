@@ -2,8 +2,8 @@ from typing import Optional
 import socket
 import json
 
-from rune.models.session.protocol.command import SessionCmd, StartSessionCmd
-from rune.models.session.protocol.response import SessionResp
+from rune.models.session.protocol.command import HandshakeCmd, SessionCmd, StartSessionCmd
+from rune.models.session.protocol.response import HandshakeResp, SessionResp
 from rune.session.base import SessionManager
 
 
@@ -24,7 +24,6 @@ class DaemonSessionManager(SessionManager):
             
         except RuntimeError as e:
             print(e)
-
 
 
     def end_session(self) -> None:
@@ -51,6 +50,14 @@ class DaemonSessionManager(SessionManager):
         Raises NoSessionError if the session does not exist.
         """
         raise NotImplementedError()
+
+    def _is_daemon_started(self, timeout: float = 1) -> bool:
+        try:
+            resp = self.make_request(HandshakeCmd(), timeout)
+            return isinstance(resp, HandshakeResp) and resp.all_good
+        except:
+            return False
+
 
     def make_request(self, request: SessionCmd, timeout: float = 1) -> SessionResp:
         with socket.create_connection((self.daemon_host, self.daemon_port)) as s:

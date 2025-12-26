@@ -1,10 +1,9 @@
 import socket
 import json
-import threading
 import time
 
-from rune.models.session.protocol.response import FailureResponse, SessionResp, GetKeyResponse, StatusResponse, SuccessResponse
-from rune.models.session.protocol.command import GetSessionKeyCmd, SessionCmd, StartSessionCmd
+from rune.models.session.protocol.response import FailureResponse, HandshakeResp, SessionResp, GetKeyResponse, StatusResponse, SuccessResponse
+from rune.models.session.protocol.command import EndSessionCmd, GetSessionKeyCmd, HandshakeCmd, SessionCmd, SessionStatusCmd, StartSessionCmd
 
 class State:
     def __init__(self) -> None:
@@ -12,34 +11,30 @@ class State:
         self.session_key: str | None = None
         self.ttl_seconds: int | None = None
         self.start_time: float | None = None
+        self.started: bool = False
+        self.end_time: float | None = None
 
     @property
-    def time_remaining(self) -> float:
-        if self.start_time and self.ttl_seconds:
-            return self.start_time + self.ttl_seconds - time.time()
-        raise ValueError("Session not started")
-
-    @property
-    def started(self) -> bool:
-        if self.start_time:
-            return True
-        else:
-            return False
+    def time_remaining(self) -> float | None:
+        if self.end_time:
+            return self.end_time - time.time()
+        return None
 
     @property
     def is_finished(self) -> bool:
         if self.ttl_seconds == None:
             return False
-        try:
-            return self.time_remaining > 0
-        except:
-            return False
+        if self.time_remaining:
+            return self.time_remaining < 0
+        return False
 
     def start(self, user: str, session_key: str, ttl_seconds: int) -> None:
         self.user = user
         self.start_time = time.time()
+        self.started = True
         self.session_key = session_key
         self.ttl_seconds = ttl_seconds
+        self.end_time = time.time() + ttl_seconds
 
     def end(self) -> None:
         self.ttl_seconds = 0
@@ -61,7 +56,7 @@ def handle_client(conn, addr, state: State):
                     request = SessionCmd.from_dict(json.loads(line))
                     response = process_request(request, state)
                 except json.JSONDecodeError:
-                    response = FailureResponse("Error decoding requrest.")
+                    response = FailureResponse("Error decoding request.")
 
 
                 conn.sendall((json.dumps(response.to_dict()) + "\n").encode("utf-8"))
@@ -71,36 +66,34 @@ def process_request(request: SessionCmd, state: State) -> SessionResp:
     cmd = request.CMD
 
     match request.CMD:
-        case SessionCmd.GET_SESSION_KEY:
-            if not isinstance(request, GetSessionKeyCmd):
-                return FailureResponse("Something is wrong with the protocol.")
+        case SessionCmd.GET_SESSION_KEY if isinstance(request, GetSessionKeyCmd):
             if state.user != request.user:
                 return FailureResponse("Stored Session Key was provided by a different user.")
             if state.session_key:
                 return GetKeyResponse(state.session_key)
             else:
                 return FailureResponse("Session key is not set")
-        case SessionCmd.START_SESSION:
-            if not isinstance(request, StartSessionCmd):
-                return FailureResponse("Something is wrong with the protocol.")
+        case SessionCmd.START_SESSION if isinstance(request, StartSessionCmd):
             if not state.started:
                 state.start(request.user, request.session_key, request.ttl)
                 return SuccessResponse("Session started")
             else:
                 return FailureResponse("Session already in progress")
-        case SessionCmd.END_SESSION:
+        case SessionCmd.END_SESSION if isinstance(request, EndSessionCmd):
             if state.started:
                 state.end()
                 return SuccessResponse("Session ended")
             else:
                 return FailureResponse("No session in progress")
-        case SessionCmd.SESSION_STATUS:
-            try:
-                return StatusResponse(int(state.time_remaining), str(state.user))
-            except:
-                return StatusResponse(-1, "None")
+        case SessionCmd.SESSION_STATUS if isinstance(request, SessionStatusCmd):
+            if state.time_remaining:
+                return StatusResponse(int(state.time_remaining), state.user or "")
+            else:
+                return StatusResponse(-1, state.user or "")
+        case SessionCmd.HANDSHAKE if isinstance(request, HandshakeCmd):
+            return HandshakeResp(all_good=True)
 
-    return FailureResponse(f"Unknown command type {cmd}.")
+    return FailureResponse(f"Unknown command type {cmd} or session format {str(type(request))}.")
 
 
 def main():
@@ -108,15 +101,24 @@ def main():
     PORT = 5000
     state = State()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
         s.bind((HOST, PORT))
         s.listen()
-        s.settimeout(10)
+
         print(f"Daemon listening on {HOST}:{PORT}")
 
         while not state.is_finished:
+            print(f"waiting for socket connection... (time remaining: {state.time_remaining})")
             try:
                 conn, addr = s.accept()
-                threading.Thread(target=handle_client, args=(conn, addr, state), daemon=True).start()
+                handle_client(conn, addr, state)
             except:
                 continue
+
+        print("Session finished, final state:")
+        print(f"is finished: {state.is_finished}")
+        print(state.session_key)
+        print(state.ttl_seconds)
+        print(state.start_time)
+        print(state.user)
 
