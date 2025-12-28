@@ -65,7 +65,7 @@ def handle_client(conn, addr, state: State):
 def process_request(request: SessionCmd, state: State) -> SessionResp:
     cmd = request.CMD
 
-    match request.CMD:
+    match cmd:
         case SessionCmd.GET_SESSION_KEY if isinstance(request, GetSessionKeyCmd):
             if state.user != request.user:
                 return FailureResponse("Stored Session Key was provided by a different user.")
@@ -96,29 +96,17 @@ def process_request(request: SessionCmd, state: State) -> SessionResp:
     return FailureResponse(f"Unknown command type {cmd} or session format {str(type(request))}.")
 
 
-def main():
-    HOST = "localhost"
-    PORT = 5000
+def main(host: str, port: int):
     state = State()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(1)
-        s.bind((HOST, PORT))
+        s.bind((host, port))
         s.listen()
 
-        print(f"Daemon listening on {HOST}:{PORT}")
-
         while not state.is_finished:
-            print(f"waiting for socket connection... (time remaining: {state.time_remaining})")
             try:
                 conn, addr = s.accept()
                 handle_client(conn, addr, state)
-            except:
+            except TimeoutError:
                 continue
-
-        print("Session finished, final state:")
-        print(f"is finished: {state.is_finished}")
-        print(state.session_key)
-        print(state.ttl_seconds)
-        print(state.start_time)
-        print(state.user)
 

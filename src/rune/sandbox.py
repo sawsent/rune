@@ -7,17 +7,17 @@ import json
 
 def sandbox():
     print("sandbox rune")
-    #spawn_daemon()
-    try:
-        set_password()
-    except ConnectionRefusedError as e:
-        print(e)
+    spawn_daemon()
+    #try:
+    #    set_password()
+    #except ConnectionRefusedError as e:
+    #    print(e)
     #get_password()
     #stop()
 
 def spawn_daemon():
     print("spawning daemon")
-    process.main()
+    process.main("localhost", 5000)
 
 def send(request: SessionCmd) -> SessionResp:
     HOST = "localhost"

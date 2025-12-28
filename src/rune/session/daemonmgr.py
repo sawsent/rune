@@ -1,10 +1,13 @@
 from typing import Optional
 import socket
 import json
+import subprocess
+import sys
 
 from rune.models.session.protocol.command import HandshakeCmd, SessionCmd, StartSessionCmd
 from rune.models.session.protocol.response import HandshakeResp, SessionResp
 from rune.session.base import SessionManager
+from rune.utils.environment import sanitized_env
 
 
 class DaemonSessionManager(SessionManager):
@@ -15,12 +18,16 @@ class DaemonSessionManager(SessionManager):
     def start_session(self, user: str, session_key: str, ttl_seconds: int) -> None:
         """
         Starts a session.
-        Session exists for the provided ttl. (-1 means it will not close)
+        Session exists for the provided ttl.
         """
+        if not self._is_daemon_started():
+            self._spawn_daemon()
+
         command = StartSessionCmd(session_key, ttl_seconds, user)
+
         try:
             response = self.make_request(command)
-            print(response.RESP)
+            print(response.to_dict())
             
         except RuntimeError as e:
             print(e)
@@ -58,6 +65,23 @@ class DaemonSessionManager(SessionManager):
         except:
             return False
 
+    def _spawn_daemon(self) -> bool:
+        env = sanitized_env({
+            "HOST": self.daemon_host,
+            "PORT": str(self.daemon_port),
+        })
+
+        subprocess.Popen(
+            [sys.executable, "-m", "rune.session.daemon"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            env=env,
+            close_fds=True,
+            start_new_session=True,
+        )
+
+        return self._is_daemon_started()
 
     def make_request(self, request: SessionCmd, timeout: float = 1) -> SessionResp:
         with socket.create_connection((self.daemon_host, self.daemon_port)) as s:

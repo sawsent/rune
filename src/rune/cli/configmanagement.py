@@ -9,6 +9,7 @@ import typer
 
 from rune.context import Context
 from rune.models.settings.encryptionsettings import EncryptionSettings
+from rune.models.settings.sessionsettings import DaemonSessionSettings
 from rune.models.settings.storagesettings import FileBasedStorageSettings
 from rune.utils.input import get_choice_by_idx, require
 from rune.utils import display
@@ -226,6 +227,25 @@ def setup(app: Typer):
 
         display.success_panel(f"Encryption mode set to '[bold]{mode}[/]'.\n\n" +\
                 "[dim]Existing secrets remain encrypted with their original settings.[/]", title="Encryption Updated")
+
+    @app.command(name="session")
+    def config_session(
+        _port: Annotated[
+            int,
+            Option("--port", "-p", help="The port for the local session daemon."),
+        ],
+    ):
+        """
+        Configure the session daemon used by rune.
+        """
+        context = Context.get()
+
+        new_settings = DaemonSessionSettings(port=_port)
+        context.settings.update(session=new_settings)
+
+        display.success_panel(f"Session daemon port set to '[bold]{_port}[/]'.", title="Encryption Updated")
+
+
 
     @app.command(name="show")
     def show_config(

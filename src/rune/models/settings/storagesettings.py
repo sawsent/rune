@@ -15,7 +15,8 @@ class StorageSettings(ABC):
     def to_dict(self) -> Dict: raise NotImplementedError()
 
     @classmethod
-    def from_dict(cls, d: Dict) -> "StorageSettings":
+    def from_dict(cls, d: Dict | None) -> "StorageSettings":
+        if not d: return cls.default()
         match d["mode"]:
             case cls.FILE_BASED:
                 return FileBasedStorageSettings.from_dict(d)
@@ -40,7 +41,8 @@ class FileBasedStorageSettings(StorageSettings):
         }
     
     @classmethod
-    def from_dict(cls, d: Dict) -> Self:
+    def from_dict(cls, d: Dict | None) -> Self:
+        if not d: return cls.default()
         return cls(d["file"])
 
     @classmethod
