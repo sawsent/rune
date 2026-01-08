@@ -12,7 +12,8 @@ class EncryptionSettings(ABC):
     def to_dict(self) -> Dict: raise NotImplementedError()
 
     @classmethod
-    def from_dict(cls, d: Dict) -> "EncryptionSettings":
+    def from_dict(cls, d: Dict | None) -> "EncryptionSettings":
+        if not d: return cls.default()
         match d["mode"]:
             case cls.AES_GCM:
                 return AES_GCMEncryptionSettings.from_dict(d)
@@ -44,7 +45,8 @@ class AES_GCMEncryptionSettings(EncryptionSettings):
         }
     
     @classmethod
-    def from_dict(cls, d: Dict) -> Self:
+    def from_dict(cls, d: Dict | None) -> Self:
+        if not d: return cls.default()
         return cls()
 
     @classmethod

@@ -16,7 +16,13 @@ def input_key() -> str:
     return Prompt.ask(KEY_PROMPT, password=True)
 
 def input_default_key() -> str:
-    return Prompt.ask("The [bold]default key[/] for this session")
+    return Prompt.ask("The [bold]default key[/] for this session", password=True)
+
+def get_session_key(user: str) -> str | None:
+    try:
+        return Context.get().session_manager.get_default_key(user)
+    except:
+        return None
 
 def sanitize_name(full_name: str) -> str:
     if "//" in full_name:
@@ -43,6 +49,11 @@ def get_fields_dict(fields: str | None, name: str) -> Dict[str, str]:
         elif len(split) >= 2:
             ret[split[0]] = "".join(split[1:])
     return ret
+
+def get_fields_keys(fields: str | None) -> List[str]:
+    if not fields:
+        return []
+    return fields.split(",")
 
 def get_fqn(name: str, namespace: Namespace) -> str:
     return "/".join(namespace.ns + [name])

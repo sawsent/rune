@@ -44,8 +44,8 @@
 - [x] Soft and hard deletes
 
 ## Phase 2 — Default-Key & Sessions (v0.8.0)
-- [ ] Introduce default-key (session key) concept
-- [ ] `rune session start --default-key <encryption-key>` / `rune session end`
+- [ ] Introduce session-key (default key) concept
+- [ ] `rune session start --session-key <encryption-key>` / `rune session end`
 - [ ] Background session daemon (local-only)
 - [ ] Secrets encrypted with:
   - [ ] explicit key OR

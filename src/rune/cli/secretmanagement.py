@@ -6,7 +6,7 @@ from rune.commands.addcmd import handle_add_cmd
 from rune.commands.getcmd import handle_get_command
 from rune.commands.movecmd import handle_move_command
 from rune.commands.updatecmd import handle_update_command
-from rune.commands.deletecmd import handle_delete_command, handle_restore_cmd
+from rune.commands.deletecmd import handle_delete_command, handle_delete_fields_command, handle_restore_cmd
 from rune.commands.listcmd import handle_ls_command
 from rune.utils.input import ensure_active_user
 
@@ -39,7 +39,8 @@ def setup(app: Typer):
     def add(
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
         _fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
-        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None
+        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
+        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = True,
     ):
         """
         Add a new secret to the vault.
@@ -48,13 +49,18 @@ def setup(app: Typer):
         will be prompted securely.
         """
         active_user = ensure_active_user()
-        handle_add_cmd(active_user, _fields, _name, _key)
+        handle_add_cmd(active_user, _fields, _name, _key, not no_session_key)
 
     @app.command()
     def delete(
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
+        _fields: Annotated[
+            Optional[str], 
+            typer.Option("--fields", "-f", help="The fields to delete. Will delete all fields if not provided. Ex: -f <field1>,<field2>")
+        ] = None,
         _hard: Annotated[bool, typer.Option("--hard", help="Hard delete the secret. Requires encryption key.")] = False,
         _key: Annotated[Optional[str], typer.Option("--key", "-k", help="Key used to encrypt the secret. Required if `--hard`.")] = None,
+        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = False,
     ):
         """
         Delete a secret from the vault.
@@ -62,7 +68,10 @@ def setup(app: Typer):
         Hard delete requires original encryption key.
         """
         active_user = ensure_active_user()
-        handle_delete_command(active_user, _hard, _name, _key)
+        if not _fields:
+            handle_delete_command(active_user, _hard, _name, _key, not no_session_key)
+        else:
+            handle_delete_fields_command(active_user, _hard, _name, _key, _fields, not no_session_key)
 
     @app.command()
     def restore(
@@ -79,7 +88,8 @@ def setup(app: Typer):
     def update(
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
         _fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
-        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP_UPDATE)] = None
+        _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP_UPDATE)] = None,
+        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = False,
     ):
         """
         Update an existing secret in the vault.
@@ -87,17 +97,15 @@ def setup(app: Typer):
         Fields without explicit values will be prompted securely.
         """
         active_user = ensure_active_user()
-        handle_update_command(active_user, _fields, _name, _key)
+        handle_update_command(active_user, _fields, _name, _key, not no_session_key)
 
     @app.command()
     def get(
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
         _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-        interactive: Annotated[bool, typer.Option(
-            "--interactive", "-i",
-            help="Shortcut for `rune ls -i`. Name and key are ignored when using interactive."
-        )] = False,
-        show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False
+        show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False,
+        show_deleted: Annotated[bool, typer.Option("--show-deleted", help="Show soft deleted fields")]=False,
+        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = False,
     ):
         """
         Retrieve a secret from the vault.
@@ -105,10 +113,7 @@ def setup(app: Typer):
         Copies the selected field to clipboard by default.
         """
         active_user = ensure_active_user()
-        if interactive:
-            handle_ls_command(active_user, namespace=None, interactive=True, show=show, show_deleted=False)
-        else:
-            handle_get_command(active_user, _name, _key, show)
+        handle_get_command(active_user, _name, _key, show, show_deleted, not no_session_key)
 
     OG_NAME_HELP = "Full name of secret to move"
     DEST_NAME_HELP = "Destination name for the secret"
@@ -128,7 +133,8 @@ def setup(app: Typer):
         namespace: Annotated[Optional[str], typer.Argument(help="Filter secrets by namespace")] = None,
         interactive: Annotated[bool, typer.Option("--interactive", "-i", help="Interactively select and retrieve secrets from the list.")] = False,
         show: Annotated[bool, typer.Option("--show","-s", help="Show secret values in the terminal. Only used with --interactive.")]=False,
-        show_deleted: Annotated[bool, typer.Option("--show-deleted", help="Show soft deleted secrets.")] = False
+        show_deleted: Annotated[bool, typer.Option("--show-deleted", help="Show soft deleted secrets.")] = False,
+        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = False,
     ):
         """
         List all secrets in the vault for the logged in user, organized by namespace.
@@ -137,5 +143,5 @@ def setup(app: Typer):
         Use `--namespace` to filter results.
         """
         active_user = ensure_active_user()
-        handle_ls_command(active_user, namespace, interactive, show, show_deleted)
+        handle_ls_command(active_user, namespace, interactive, show, show_deleted, not no_session_key)
 

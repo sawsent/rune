@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Dict, Optional
+
+from rune.models.session.status import SessionStatus
 
 
 class SessionManager(ABC):
     @abstractmethod
-    def start_session(self, default_password: Optional[str] = None, ttl_seconds: int = -1) -> None:
+    def start_session(self, user: str, session_key: str, ttl_seconds: int) -> None:
         """
         Starts a session.
         Session exists for the provided ttl. (-1 means it will not close)
@@ -30,28 +32,23 @@ class SessionManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def set_default_key(self, key: str) -> None:
-        """
-        Sets the default key for this session.
-
-        raises NoSessionError if the session does not exist.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_default_key(self) -> Optional[str]:
+    def get_default_key(self, user: str) -> Optional[str]:
         """
         Retrieves the default key for this session.
         Returns None if the key is not set.
 
         Raises NoSessionError if the session does not exist.
+        Raises WrongUserError if the user is not the same as the one that started the session.
         """
         raise NotImplementedError()
 
     @abstractmethod
-    def is_default_key_defined(self) -> bool:
+    def get_session_status(self) -> SessionStatus:
         """
-        Raises NoSessionError if the session does not exist
+        Retrieves the session status.
+
+        Raises NoSessionError if the session does not exist.
         """
         raise NotImplementedError()
+
 

@@ -27,6 +27,7 @@ classifiers = [
 
 [project.scripts]
 rune = "rune.bootstrap:main"
+rune-sand = "rune.sandbox:sandbox"
 
 [build-system]
 requires = ["setuptools>=61.0"]

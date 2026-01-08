@@ -2,6 +2,8 @@ from typing import Self
 from rune.crypto.base import Encrypter
 from rune.crypto.factory import get_encrypter
 from rune.models.settings.settings import Settings
+from rune.session.base import SessionManager
+from rune.session.factory import get_session_manager
 from rune.storage.secrets.base import StorageManager
 from rune.storage.secrets.factory import get_storage_manager
 from rune.storage.settings.settingsstorage import SettingsStorageManager
@@ -13,13 +15,15 @@ class Context:
         self,
         settings_manager: SettingsStorageManager | None,
         encrypter: Encrypter | None,
-        storage_manager: StorageManager | None
+        storage_manager: StorageManager | None,
+        session_manager: SessionManager | None
 
     ) -> None:
         self.settings_manager: SettingsStorageManager = settings_manager or SettingsStorageManager()
         self.settings: Settings = self.settings_manager.load_settings()
         self.configured_encrypter: Encrypter = encrypter or get_encrypter(self.settings)
         self.storage_manager: StorageManager = storage_manager or get_storage_manager(self.settings)
+        self.session_manager: SessionManager = session_manager or get_session_manager(self.settings)
 
     @classmethod
     def get(cls) -> Self:
@@ -33,9 +37,10 @@ class Context:
         settings_manager: SettingsStorageManager | None = None,
         encrypter: Encrypter | None = None,
         storage_manager: StorageManager | None = None,
+        session_manager: SessionManager | None = None,
     ) -> Self:
         if not cls._context:
-            cls._context = cls(settings_manager, encrypter, storage_manager)
+            cls._context = cls(settings_manager, encrypter, storage_manager, session_manager)
             return cls._context
         raise RuntimeError("Context is already built")
 
@@ -45,9 +50,10 @@ class Context:
         settings_manager: SettingsStorageManager | None = None,
         encrypter: Encrypter | None = None,
         storage_manager: StorageManager | None = None,
+        session_manager: SessionManager | None = None,
     ) -> Self:
         if cls._context:
-            cls._context = cls(settings_manager, encrypter, storage_manager)
+            cls._context = cls(settings_manager, encrypter, storage_manager, session_manager)
             return cls._context
         raise RuntimeError("Context is not set. Call `Context.build()` first.")
 
