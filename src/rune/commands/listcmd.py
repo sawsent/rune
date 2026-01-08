@@ -10,7 +10,7 @@ import typer
 
 console = Console()
 
-def handle_ls_command(user: str, namespace: str | None, interactive: bool, show: bool, show_deleted: bool):
+def handle_ls_command(user: str, namespace: str | None, interactive: bool, show: bool, show_deleted: bool, use_session_key: bool):
     result = list_secrets(user)
     secrets = result.value()
 
@@ -75,12 +75,9 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
             except:
                 continue
             if idx in indexes:
-                if namespace:
-                    fqn = namespace.removeprefix("/").removesuffix("/").strip() + "/" + indexes[idx]
-                else:
-                    fqn = indexes[idx]
+                fqn = (namespace or "").removeprefix("/").removesuffix("/").strip() + "/" + indexes[idx]
                 console.print(f"Fetching secret [bold]{fqn}[/]")
-                handle_get_command(user, _name=fqn, show=show)
+                handle_get_command(user, _name=fqn, show=show, _key=None, show_deleted=show_deleted, use_session_key=use_session_key)
                 break
 
 

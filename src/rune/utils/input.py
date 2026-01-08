@@ -16,7 +16,13 @@ def input_key() -> str:
     return Prompt.ask(KEY_PROMPT, password=True)
 
 def input_default_key() -> str:
-    return Prompt.ask("The [bold]default key[/] for this session")
+    return Prompt.ask("The [bold]default key[/] for this session", password=True)
+
+def get_session_key(user: str) -> str | None:
+    try:
+        return Context.get().session_manager.get_default_key(user)
+    except:
+        return None
 
 def sanitize_name(full_name: str) -> str:
     if "//" in full_name:

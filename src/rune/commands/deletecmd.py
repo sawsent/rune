@@ -1,11 +1,12 @@
 from rune.internal.delete import delete_secret, delete_secret_fields, restore_secret
-from rune.utils.input import get_fields_keys, input_key, input_name, sanitize_name
+from rune.utils.input import get_fields_keys, get_session_key, input_key, input_name, sanitize_name
 from rune.utils import display
 
-def handle_delete_command(user: str, hard: bool, _name: str | None = None, _key: str | None = None) -> None:
+def handle_delete_command(user: str, hard: bool, _name: str | None, _key: str | None, use_session_key: bool) -> None:
     name = sanitize_name(_name or input_name())
 
-    key = (_key or input_key()) if hard else ""
+    session_key = get_session_key(user) if use_session_key else None
+    key = _key or session_key or input_key()
 
     result = delete_secret(user, name, hard, key)
 
@@ -14,11 +15,12 @@ def handle_delete_command(user: str, hard: bool, _name: str | None = None, _key:
     else:
         display.failed_panel(f"[bold red]Error:[/] {result.failure_reason()}")
 
-def handle_delete_fields_command(user: str, hard: bool, _name: str | None, _key: str | None, _fields: str) -> None:
+def handle_delete_fields_command(user: str, hard: bool, _name: str | None, _key: str | None, _fields: str, use_session_key: bool) -> None:
     name = sanitize_name(_name or input_name())
     fields = get_fields_keys(_fields)
 
-    key = (_key or input_key()) if hard else ""
+    session_key = get_session_key(user) if use_session_key else None
+    key = _key or session_key or input_key()
 
     result = delete_secret_fields(user, name, hard, key, fields)
 

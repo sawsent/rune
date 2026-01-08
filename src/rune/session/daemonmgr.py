@@ -24,8 +24,7 @@ class DaemonSessionManager(SessionManager):
         Session exists for the provided ttl.
         """
         if not self._is_daemon_started():
-            started = self._spawn_daemon()
-            print(started)
+            self._spawn_daemon()
 
         self.make_request(StartSessionCmd(session_key, ttl_seconds, user))
 
@@ -94,9 +93,6 @@ class DaemonSessionManager(SessionManager):
             return SessionStatus.STARTED_UNKNOWN()
         except:
             return SessionStatus.NOT_STARTED()
-
-
-
 
     def _is_daemon_started(self, timeout: float = 1) -> bool:
         try:
