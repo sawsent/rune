@@ -7,37 +7,47 @@ from rune.models.session.protocol.command import EndSessionCmd, GetSessionKeyCmd
 
 class State:
     def __init__(self) -> None:
+        self.start_time: float
         self.user: str | None = None
         self.session_key: str | None = None
-        self.ttl_seconds: int | None = None
-        self.start_time: float | None = None
         self.started: bool = False
         self.end_time: float | None = None
+        self.force_finish: bool = False
+        self.no_ttl: bool = False
 
     @property
-    def time_remaining(self) -> float | None:
+    def time_remaining(self) -> float:
+        if self.no_ttl:
+            return -1
         if self.end_time:
             return self.end_time - time.time()
-        return None
+        return -1
 
     @property
     def is_finished(self) -> bool:
-        if self.ttl_seconds == None:
+        if not self.started:
+            return False
+        if self.force_finish:
+            return True
+        if self.no_ttl:
             return False
         if self.time_remaining:
             return self.time_remaining < 0
         return False
 
     def start(self, user: str, session_key: str, ttl_seconds: int) -> None:
-        self.user = user
+        if ttl_seconds == -1:
+            self.no_ttl = True
+
         self.start_time = time.time()
+        self.end_time = self.start_time + ttl_seconds
+
+        self.user = user
         self.started = True
         self.session_key = session_key
-        self.ttl_seconds = ttl_seconds
-        self.end_time = time.time() + ttl_seconds
 
     def end(self) -> None:
-        self.ttl_seconds = 0
+        self.force_finish = True
 
 def handle_client(conn, addr, state: State):
     with conn:
@@ -98,6 +108,8 @@ def process_request(request: SessionCmd, state: State) -> SessionResp:
 
 def main(host: str, port: int):
     state = State()
+    print(state)
+    print(state.is_finished)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(1)
         s.bind((host, port))

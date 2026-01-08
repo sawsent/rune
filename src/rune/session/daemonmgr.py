@@ -1,13 +1,16 @@
+import time
 from typing import Optional
 import socket
 import json
 import subprocess
 import sys
 
-from rune.models.session.protocol.command import HandshakeCmd, SessionCmd, StartSessionCmd
-from rune.models.session.protocol.response import HandshakeResp, SessionResp
+from rune.models.session.protocol.command import EndSessionCmd, GetSessionKeyCmd, HandshakeCmd, SessionCmd, SessionStatusCmd, StartSessionCmd
+from rune.models.session.protocol.response import FailureResponse, GetKeyResponse, HandshakeResp, SessionResp, StatusResponse, SuccessResponse
+from rune.models.session.status import SessionStatus
 from rune.session.base import SessionManager
 from rune.utils.environment import sanitized_env
+from rune.exception.session import NoSessionError, WrongUserError
 
 
 class DaemonSessionManager(SessionManager):
@@ -21,16 +24,10 @@ class DaemonSessionManager(SessionManager):
         Session exists for the provided ttl.
         """
         if not self._is_daemon_started():
-            self._spawn_daemon()
+            started = self._spawn_daemon()
+            print(started)
 
-        command = StartSessionCmd(session_key, ttl_seconds, user)
-
-        try:
-            response = self.make_request(command)
-            print(response.to_dict())
-            
-        except RuntimeError as e:
-            print(e)
+        self.make_request(StartSessionCmd(session_key, ttl_seconds, user))
 
 
     def end_session(self) -> None:
@@ -39,7 +36,14 @@ class DaemonSessionManager(SessionManager):
 
         raises NoSessionError if the session does not exist.
         """
-        raise NotImplementedError()
+        if not self._is_daemon_started():
+            raise NoSessionError("No session in progress.")
+
+        resp = self.make_request(EndSessionCmd())
+        if isinstance(resp, SuccessResponse):
+            return
+
+        raise RuntimeError(str(resp.to_dict()))
 
     def is_session_in_progress(self) -> bool:
         """
@@ -47,16 +51,52 @@ class DaemonSessionManager(SessionManager):
 
         False otherwise.
         """
-        raise NotImplementedError()
+        if not self._is_daemon_started():
+            return False
 
-    def get_default_key(self) -> Optional[str]:
+        resp = self.make_request(SessionStatusCmd())
+        if isinstance(resp, StatusResponse):
+            return resp.remaining_ttl != -1
+
+        return False
+
+
+    def get_default_key(self, user: str) -> Optional[str]:
         """
         Retrieves the default key for this session.
         Returns None if the key is not set.
 
         Raises NoSessionError if the session does not exist.
+        Raises WrongUserError if the user is not the same as the one that started the session.
         """
-        raise NotImplementedError()
+        if not self._is_daemon_started():
+            raise NoSessionError("No session in progress.")
+
+        resp = self.make_request(GetSessionKeyCmd(user))
+        if isinstance(resp, FailureResponse):
+            raise WrongUserError(resp.message)
+
+        if isinstance(resp, GetKeyResponse):
+            return resp.session_key
+
+        return None
+
+    def get_session_status(self) -> SessionStatus:
+        """
+        Retrieves the session status.
+
+        Raises NoSessionError if the session does not exist.
+        """
+        try:
+            resp = self.make_request(SessionStatusCmd())
+            if isinstance(resp, StatusResponse):
+                return SessionStatus(True, resp.remaining_ttl, resp.user)
+            return SessionStatus.STARTED_UNKNOWN()
+        except:
+            return SessionStatus.NOT_STARTED()
+
+
+
 
     def _is_daemon_started(self, timeout: float = 1) -> bool:
         try:
@@ -80,6 +120,8 @@ class DaemonSessionManager(SessionManager):
             close_fds=True,
             start_new_session=True,
         )
+
+        time.sleep(0.5)
 
         return self._is_daemon_started()
 

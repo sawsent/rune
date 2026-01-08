@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Dict, Optional
+
+from rune.models.session.status import SessionStatus
 
 
 class SessionManager(ABC):
@@ -30,12 +32,23 @@ class SessionManager(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_default_key(self) -> Optional[str]:
+    def get_default_key(self, user: str) -> Optional[str]:
         """
         Retrieves the default key for this session.
         Returns None if the key is not set.
 
         Raises NoSessionError if the session does not exist.
+        Raises WrongUserError if the user is not the same as the one that started the session.
         """
         raise NotImplementedError()
+
+    @abstractmethod
+    def get_session_status(self) -> SessionStatus:
+        """
+        Retrieves the session status.
+
+        Raises NoSessionError if the session does not exist.
+        """
+        raise NotImplementedError()
+
 
