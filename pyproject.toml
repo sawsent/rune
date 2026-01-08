@@ -1,6 +1,6 @@
 [project]
 name = "rune"
-version = "0.6.0"
+version = "0.8.0"
 description = "Rune is a cli credential manager for developers. Store, retrieve, update, and manage secrets securely and easily."
 authors = [{ name = "sawsent" }]
 readme = "README.md"
@@ -27,7 +27,6 @@ classifiers = [
 
 [project.scripts]
 rune = "rune.bootstrap:main"
-rune-sand = "rune.sandbox:sandbox"
 
 [build-system]
 requires = ["setuptools>=61.0"]

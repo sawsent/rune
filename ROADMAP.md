@@ -44,19 +44,20 @@
 - [x] Soft and hard deletes
 
 ## Phase 2 — Default-Key & Sessions (v0.8.0)
-- [ ] Introduce session-key (default key) concept
-- [ ] `rune session start --session-key <encryption-key>` / `rune session end`
-- [ ] Background session daemon (local-only)
-- [ ] Secrets encrypted with:
-  - [ ] explicit key OR
-  - [ ] default-key if active
-- [ ] No keys written to disk
+- [x] Introduce session-key (default key) concept
+- [x] `rune session start --session-key <encryption-key>` / `rune session end`
+- [x] Background session daemon (local-only)
+- [x] Secrets encrypted with:
+  - [x] explicit key OR
+  - [x] default-key if active
+- [x] No keys written to disk
 
 **Exit criteria**
-- [ ] Ergonomic UX
-- [ ] Secure in-memory key handling
-- [ ] Session lifecycle clearly defined
-- [ ] Rune is useful daily as a local developer vault
+- [x] Ergonomic UX
+- [x] Secure in-memory key handling
+- [x] Session lifecycle clearly defined
+- [x] Rune is useful daily as a local developer vault
+- [ ] Documentation (README) is up-to-date
 
 
 ## Phase 3 — Data Model Hardening and unit testing (v1.0.0)
