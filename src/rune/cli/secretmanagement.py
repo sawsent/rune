@@ -6,7 +6,7 @@ from rune.commands.addcmd import handle_add_cmd
 from rune.commands.getcmd import handle_get_command
 from rune.commands.movecmd import handle_move_command
 from rune.commands.updatecmd import handle_update_command
-from rune.commands.deletecmd import handle_delete_command, handle_restore_cmd
+from rune.commands.deletecmd import handle_delete_command, handle_delete_fields_command, handle_restore_cmd
 from rune.commands.listcmd import handle_ls_command
 from rune.utils.input import ensure_active_user
 
@@ -53,6 +53,10 @@ def setup(app: Typer):
     @app.command()
     def delete(
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
+        _fields: Annotated[
+            Optional[str], 
+            typer.Option("--fields", "-f", help="The fields to delete. Will delete all fields if not provided. Ex: -f <field1>,<field2>")
+        ] = None,
         _hard: Annotated[bool, typer.Option("--hard", help="Hard delete the secret. Requires encryption key.")] = False,
         _key: Annotated[Optional[str], typer.Option("--key", "-k", help="Key used to encrypt the secret. Required if `--hard`.")] = None,
     ):
@@ -62,7 +66,10 @@ def setup(app: Typer):
         Hard delete requires original encryption key.
         """
         active_user = ensure_active_user()
-        handle_delete_command(active_user, _hard, _name, _key)
+        if not _fields:
+            handle_delete_command(active_user, _hard, _name, _key)
+        else:
+            handle_delete_fields_command(active_user, _hard, _name, _key, _fields)
 
     @app.command()
     def restore(
@@ -93,11 +100,8 @@ def setup(app: Typer):
     def get(
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
         _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-        interactive: Annotated[bool, typer.Option(
-            "--interactive", "-i",
-            help="Shortcut for `rune ls -i`. Name and key are ignored when using interactive."
-        )] = False,
-        show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False
+        show: Annotated[bool, typer.Option("--show","-s",help="Show secret values in the terminal instead of hiding them.")]=False,
+        show_deleted: Annotated[bool, typer.Option("--show-deleted", help="Show soft deleted fields")]=False
     ):
         """
         Retrieve a secret from the vault.
@@ -105,10 +109,7 @@ def setup(app: Typer):
         Copies the selected field to clipboard by default.
         """
         active_user = ensure_active_user()
-        if interactive:
-            handle_ls_command(active_user, namespace=None, interactive=True, show=show, show_deleted=False)
-        else:
-            handle_get_command(active_user, _name, _key, show)
+        handle_get_command(active_user, _name, _key, show, show_deleted)
 
     OG_NAME_HELP = "Full name of secret to move"
     DEST_NAME_HELP = "Destination name for the secret"

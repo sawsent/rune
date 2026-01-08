@@ -60,6 +60,7 @@ class Secret:
 
     def restore(self) -> Self:
         self.deleted = False
+        self.fields = {k: v.restore() for k, v in self.fields.items()}
         return self
 
     def to_dict(self) -> Dict:

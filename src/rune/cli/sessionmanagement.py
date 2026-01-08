@@ -1,23 +1,42 @@
 from typing import Annotated, Optional
-from typer import Typer, Argument, Option
+from typer import Typer, Option
 
 from rune.exception.session import NoSessionError, WrongUserError
 from rune.utils.input import ensure_active_user, input_default_key
 from rune.context import Context
 from rune.utils import display
 
+DEFAULT_KEY_HELP = (
+    "Default encryption key for this session.\n"
+    "If omitted, you will be prompted securely.\n"
+    "The key is kept in memory only and never written to disk."
+)
+
+SESSION_TTL_HELP = (
+    "Session time-to-live in seconds.\n"
+    "If omitted, the configured default TTL is used.\n"
+    "Use -1 to create a session that does not expire."
+)
 
 def setup(app: Typer):
     @app.command(name="start")
     def start(
-        _key: Annotated[Optional[str], Option("--default-key", "-k", help="Key")] = None,
-        _ttl: Annotated[Optional[int], Option("--ttl", help="ttl")] = None
+        _key: Annotated[
+            Optional[str],
+            Option("--default-key", "-k", help=DEFAULT_KEY_HELP)
+        ] = None,
+        _ttl: Annotated[
+            Optional[int],
+            Option("--ttl", help=SESSION_TTL_HELP)
+        ] = None
     ):
         """
-        Set the active username for rune.
+        Start a local rune session.
 
-        The username acts as the root namespace for all secrets.
-        This does not perform authentication or unlock encryption.
+        A session holds a default encryption key in memory and makes it
+        available to rune commands for encrypting and decrypting secrets.
+
+        Sessions are local-only and scoped to the active username.
         """
         key = _key or input_default_key()
         username = ensure_active_user()
@@ -27,15 +46,22 @@ def setup(app: Typer):
 
         sessionmgr.start_session(username, key, ttl)
 
-        expiry_message = "Session will not expire." if ttl == -1 else f"Session will expire in {ttl} seconds."
-        display.success_panel(f"Session started for user [bold cyan]{username}[/]. {expiry_message}")
+        expiry_message = (
+            "Session will [bold]not expire[/]."
+            if ttl == -1
+            else f"Session will expire in [bold]{ttl} seconds[/]."
+        )
+        display.success_panel(
+            f"Session started for user [bold cyan]{username}[/]. {expiry_message}"
+        )
 
     @app.command(name="end")
     def end():
         """
-        Clear the active username.
+        End the active session.
 
-        After logout, no secrets can be accessed until a user is selected again.
+        This immediately clears the default encryption key from memory
+        and shuts down the session daemon.
         """
         sessionmgr = Context.get().session_manager
 
@@ -43,15 +69,16 @@ def setup(app: Typer):
             sessionmgr.end_session()
             display.success_panel("Session ended.")
         except NoSessionError:
-            display.failed_panel("No session started")
-
+            display.failed_panel("No active session to end.")
 
     @app.command(name="get")
     def get():
         """
-        Clear the active username.
+        Retrieve the default session key.
 
-        After logout, no secrets can be accessed until a user is selected again.
+        This command is mainly intended for debugging or internal use.
+        It will fail if no session is active or if the active user does
+        not match the session owner.
         """
         username = ensure_active_user()
         sessionmgr = Context.get().session_manager
@@ -60,22 +87,24 @@ def setup(app: Typer):
             key = sessionmgr.get_default_key(username)
             print(key)
         except NoSessionError:
-            print("No session!")
+            display.failed_panel("No active session.")
         except WrongUserError:
-            print("Wrong user!")
+            display.failed_panel("Active user does not match session owner.")
 
     @app.command(name="status")
     def status():
         """
-        Clear the active username.
+        Show the current session status.
 
-        After logout, no secrets can be accessed until a user is selected again.
+        Displays whether a session is running, which user it belongs to,
+        and its remaining TTL (if applicable).
         """
         sessionmgr = Context.get().session_manager
 
         status = sessionmgr.get_session_status()
-        display.success_panel(f"[bold]Started:[/] {status.started}\n[bold]TTL:[/]     {status.ttl or "N/A"}\n[bold]user:[/]    {status.user or "N/A"}")
-
-
-
+        display.success_panel(
+            f"[bold]Started:[/] {status.started}\n"
+            f"[bold]TTL:[/]     {status.ttl or 'N/A'}\n"
+            f"[bold]User:[/]    {status.user or 'N/A'}"
+        )
 

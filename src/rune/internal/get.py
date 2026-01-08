@@ -5,9 +5,9 @@ from rune.exception.wrongkey import WrongKeyUsed
 from rune.models.result import Result, Success, Failure
 from rune.crypto import factory as EncrypterFactory
 
-from typing import Dict
+from typing import Dict, Tuple
 
-def get_secret(user: str, full_name: str, key: str) -> Result[Dict[str, str]]:
+def get_secret(user: str, full_name: str, key: str) -> Result[Dict[str, Tuple[str, bool]]]:
     """
     Retreives the encrypted secret via the configured storage manager.
     Decrypts the ciphertext with the provided key.
@@ -24,7 +24,7 @@ def get_secret(user: str, full_name: str, key: str) -> Result[Dict[str, str]]:
                 decrypted_fields = {}
                 for field_name, field in secret.fields.items():
                     encrypter = EncrypterFactory.get_encrypter_by_algorithm(field.algorithm)
-                    decrypted_fields[field_name] = encrypter.decrypt(field, key)
+                    decrypted_fields[field_name] = (encrypter.decrypt(field, key), field.deleted)
             except WrongEncryptionMode as err:
                 return Failure(err.message)
             except WrongKeyUsed as err:

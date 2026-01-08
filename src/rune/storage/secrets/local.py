@@ -52,7 +52,7 @@ class LocalJsonStorageManager(StorageManager):
 
     def delete_secret(self, user: str, name: str, hard: bool) -> bool:
         """
-        Deletes the entry with the provided name.
+        Deletes the secret with the provided name for the provided user.
 
         Returns True if successful, False if it fails.
         Raises NotFoundError if it fails to find a secrets file.
@@ -69,15 +69,39 @@ class LocalJsonStorageManager(StorageManager):
 
         return self.store_secrets(secrets)
 
+    def delete_secret_fields(self, user: str, name: str, fields: List[str], hard: bool) -> bool:
+        """
+        Deletes the secret fields with the provided name for the provided user.
+
+        Returns True if successful, False if it fails.
+        Raises NotFoundError if it fails to find a secrets file.
+        """
+        secrets = self.stored_secrets_by_full_name(user)
+
+        secret = secrets.get(name)
+        if not secret:
+            return False
+
+        if hard:
+            secret = secret.update(fields={k:v for k, v in secret.fields.items() if not k in fields})
+        else:
+            secret = secret.update(fields={k: v.soft_delete() if k in fields else v for k, v in secret.fields.items()})
+
+        if all([s.deleted for s in secret.fields.values()]):
+            secret = secret.soft_delete()
+
+        return self.store_secret(secret)
+
+
     def restore_secret(self, user: str, name: str) -> bool:
         """
-        Restores a soft deleted secret (makes it not soft deleted)
+        Restores a soft deleted secret (makes it not soft deleted). Restores all fields.
         """
         secrets = self.stored_secrets_by_full_name(user)
 
         to_store = secrets.get(name)
 
-        if to_store and to_store.deleted:
+        if to_store:
             return self.store_secret(to_store.restore())
         
         return False
