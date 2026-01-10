@@ -18,8 +18,10 @@ SESSION_TTL_HELP = (
     "Use -1 to create a session that does not expire."
 )
 
-def setup(app: Typer):
-    @app.command(name="start")
+def setup() -> Typer:
+
+    session_app = Typer(name="session", help="Manage rune session. Run `rune session -h` for more help.")
+    @session_app.command(name="start")
     def start(
         _key: Annotated[
             Optional[str],
@@ -55,7 +57,7 @@ def setup(app: Typer):
             f"Session started for user [bold cyan]{username}[/]. {expiry_message}"
         )
 
-    @app.command(name="end")
+    @session_app.command(name="end")
     def end():
         """
         End the active session.
@@ -71,27 +73,8 @@ def setup(app: Typer):
         except NoSessionError:
             display.failed_panel("No active session to end.")
 
-    @app.command(name="get")
-    def get():
-        """
-        Retrieve the default session key.
 
-        This command is mainly intended for debugging or internal use.
-        It will fail if no session is active or if the active user does
-        not match the session owner.
-        """
-        username = ensure_active_user()
-        sessionmgr = Context.get().session_manager
-
-        try:
-            key = sessionmgr.get_default_key(username)
-            print(key)
-        except NoSessionError:
-            display.failed_panel("No active session.")
-        except WrongUserError:
-            display.failed_panel("Active user does not match session owner.")
-
-    @app.command(name="status")
+    @session_app.command(name="status")
     def status():
         """
         Show the current session status.
@@ -107,4 +90,6 @@ def setup(app: Typer):
             f"[bold]TTL:[/]     {status.ttl or 'N/A'}\n"
             f"[bold]User:[/]    {status.user or 'N/A'}"
         )
+
+    return session_app
 

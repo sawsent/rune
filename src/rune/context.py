@@ -25,6 +25,14 @@ class Context:
         self.storage_manager: StorageManager = storage_manager or get_storage_manager(self.settings)
         self.session_manager: SessionManager = session_manager or get_session_manager(self.settings)
 
+    def save_settings(self, force: bool = False) -> None:
+        """
+        Saves the settings if they are marked as dirty (or force).
+        Dirty settings means something changed.
+        """
+        if self.settings._dirty or force:
+            self.settings_manager.save_settings(self.settings)
+
     @classmethod
     def get(cls) -> Self:
         if cls._context is not None:

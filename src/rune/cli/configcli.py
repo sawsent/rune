@@ -2,7 +2,6 @@ from pathlib import Path
 from typer import Argument, Typer, Option
 from typing import Annotated, Literal, Optional
 import pyperclip
-import typer
 
 from rune.context import Context
 from rune.models.settings.encryptionsettings import EncryptionSettings
@@ -27,126 +26,14 @@ ENCRYPTION_MODE_HELP = (
     "Changing this does NOT re-encrypt existing secrets."
 )
 
-def setup(app: Typer):
+def setup() -> Typer:
     """
     Register configuration-related commands.
     """
 
-    profile_app = Typer(
-        name="profile",
-        help="Manage configuration profiles (save, switch, list, delete).",
-    )
+    config_app = Typer(name="config", help="Manage rune configs. Run `rune config -h` for more help.")
 
-    @profile_app.command(name="list")
-    def list_profiles(
-        interactive: Annotated[
-            bool,
-            Option(
-                "--interactive",
-                "-i",
-                help="Interactively select a profile to activate after listing.",
-            ),
-        ] = False
-    ):
-        """
-        List all configured profiles.
-        """
-        settings_manager = Context.get().settings_manager
-
-        profiles = list(settings_manager.get_profiles().keys())
-        profiles_file = str(settings_manager.profiles_file.absolute())
-
-        display.print(f"[bold]Profiles file:[/] [cyan]{profiles_file}[/]")
-
-        if not profiles:
-            display.panel("[yellow]No profiles configured yet.[/] Create one with:\n[bold cyan]rune config profile save <profile-name>[/]")
-            return
-
-        display.success_panel("\n".join(f"[bold cyan][{idx}][/] {profile}" for idx, profile in enumerate(profiles, 1)), title="Available Profiles")
-
-        if not interactive:
-            return
-
-        choice = get_choice_by_idx("Select profile to activate", profiles)
-        if not choice:
-            return
-
-        load_profile(choice)
-
-    @profile_app.command(name="save")
-    def save_profile(
-        _name: Annotated[
-        str, Argument(help="Name under which the current configuration will be saved.")
-    ],
-        _force: Annotated[
-        bool,
-        Option(
-            "--force",
-            "-f",
-            help="Overwrite the profile if it already exists.",
-        ),
-    ] = False,
-    ):
-        """
-        Save the current configuration as a profile.
-        """
-        context = Context.get()
-        settings_manager = context.settings_manager
-
-        if _name in settings_manager.get_profiles() and not _force:
-            display.failed_panel(f"Profile '[bold cyan]{_name}[/]' already exists.\n\nUse [bold cyan]--force[/] to overwrite it.")
-            return
-
-        settings_manager.save_profile(context.settings, _name)
-        display.success_panel(f"Profile '[bold cyan]{_name}[/]' saved successfully.")
-
-    @profile_app.command(name="load")
-    def load_profile(
-        _name: Annotated[
-        str, Argument(help="Name of the profile to activate.")
-    ],
-    ):
-        """
-        Activate a saved configuration profile.
-        """
-        context = Context.get()
-        settings_manager = context.settings_manager
-
-        settings = settings_manager.get_profile(_name)
-        if not settings:
-            display.failed_panel(f"Profile '[bold cyan]{_name}[/]' does not exist.")
-            return
-
-        context.settings = settings.dirty()
-        settings_manager.save_profile(settings, _name)
-
-        display.success_panel(f"Switched to profile '[bold cyan]{_name}[/]'.")
-
-    @profile_app.command(name="delete")
-    def delete_profile(
-        _name: Annotated[
-        str, Argument(help="Name of the profile to delete.")
-    ],
-    ):
-        """
-        Delete an existing profile.
-        """
-        context = Context.get()
-        settings_manager = context.settings_manager
-
-        profile = settings_manager.get_profile(_name)
-        if not profile:
-            display.failed_panel(f"Profile '[bold cyan]{_name}[/]' does not exist.")
-            return
-
-        if typer.confirm(f"Are you sure you want to delete profile '{_name}'?"):
-            settings_manager.delete_profile(_name)
-            display.success_panel(f"Profile '[bold cyan]{_name}[/]' deleted.")
-
-        else:
-            raise typer.Abort()
-
-    @app.command(name="storage")
+    @config_app.command(name="storage")
     def config_storage(
         _mode: Annotated[
         Optional[Literal["local"]],
@@ -173,7 +60,7 @@ def setup(app: Typer):
 
             display.success_panel(f"Storage file set to: [bold cyan]{storage_path}[/]\n[dim]Existing secrets were not modified.[/]", title="Storage Updated")
 
-    @app.command(name="encryption")
+    @config_app.command(name="encryption")
     def config_encryption(
         mode: Annotated[
         Literal["aesgcm"],
@@ -195,7 +82,7 @@ def setup(app: Typer):
         display.success_panel(f"Encryption mode set to '[bold]{mode}[/]'.\n\n" +\
             "[dim]Existing secrets remain encrypted with their original settings.[/]", title="Encryption Updated")
 
-    @app.command(name="session")
+    @config_app.command(name="session")
     def config_session(
         _port: Annotated[int, Option("--port", "-p", help="The port for the local session daemon.")],
         _default_ttl: Annotated[Optional[int], Option("--default-ttl", "-ttl", help="The default ttl for the provided default key.")] = None,
@@ -215,7 +102,7 @@ def setup(app: Typer):
 
 
 
-    @app.command(name="show")
+    @config_app.command(name="show")
     def show_config(
         profile: Annotated[
         Optional[str],
@@ -250,7 +137,7 @@ def setup(app: Typer):
         display.print(f"[bold]Configuration for profile '[cyan]{profile}[/]':[/]")
         display.print_dict(settings.to_dict())
 
-    @app.command(name="where")
+    @config_app.command(name="where")
     def whereis(
         interactive: Annotated[
         bool,
@@ -285,5 +172,5 @@ def setup(app: Typer):
             pyperclip.copy(choice)
             display.print("[green]Path copied to clipboard.[/]")
 
-    app.add_typer(profile_app)
+    return config_app
 

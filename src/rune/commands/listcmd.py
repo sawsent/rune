@@ -8,6 +8,8 @@ from rich.console import Console
 from rich.tree import Tree
 import typer
 
+import pyperclip
+
 console = Console()
 
 def handle_ls_command(user: str, namespace: str | None, interactive: bool, show: bool, show_deleted: bool, use_session_key: bool):
@@ -69,7 +71,6 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
             choice = typer.prompt("Select secret to get (q to quit)")
             if choice.lower() == "q":
                 break
-
             try:
                 idx = int(choice)
             except:
@@ -80,6 +81,21 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
                 handle_get_command(user, _name=fqn, show=show, _key=None, show_deleted=show_deleted, use_session_key=use_session_key)
                 break
 
+    else:
+        while True:
+            choice = typer.prompt("Copy a secret name to clipboard (q to quit)")
+            if choice.lower() == "q":
+                break
+            try:
+                idx = int(choice)
+            except:
+                continue
+            if idx in indexes:
+                fqn = (namespace or "").removeprefix("/").removesuffix("/").strip() + "/" + indexes[idx]
+                fqn = fqn.removeprefix("/").removesuffix("/").strip()
+                pyperclip.copy(fqn)
+                console.print(f"Copied secret name [bold]{fqn}[/] to clipboard.")
+                return
 
 def _build_namespace_tree(full_names: List[str]) -> Dict:
     def _build_branch(current: Dict, parts: List[str]) -> Dict:

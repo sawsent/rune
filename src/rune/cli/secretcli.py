@@ -40,7 +40,7 @@ def setup(app: Typer):
         _name: Annotated[Optional[str], typer.Argument(help=NAME_HELP)] = None,
         _fields: Annotated[Optional[str], typer.Option("--fields", "-f", help=FIELDS_HELP)] = None,
         _key: Annotated[Optional[str], typer.Option("--key", "-k", help=KEY_HELP)] = None,
-        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = True,
+        no_session_key: Annotated[bool, typer.Option("--no-session-key", help="Use --no-session-key to force encryption key input.")] = False,
     ):
         """
         Add a new secret to the vault.
