@@ -1,17 +1,33 @@
-# rune
 
-rune is a secure, local-first secrets management tool designed for developers.
-It allows you to store, retrieve, and manage secrets easily while keeping them encrypted client-side.
+# Rune
+
+**Rune** is a secure, local-first secrets management CLI designed for developers.
+
+It lets you store, retrieve, and manage secrets safely on your machine, with **strong client-side encryption**, a clean namespace model, and an ergonomic workflow optimized for daily use.
+
+Rune is intentionally simple: no servers, no accounts, no background services beyond what you explicitly start.
 
 ---
 
 ## Features
 
-- zero-trust. Decrypted secrets never leave memory
-- Per-secret encryption keys
-- Namespaced secrets (`db/prod/my-db`) for easy access
-- Interactive secret entry and retrieval
-- Cross-platform (Linux, macOS, Windows)
+- 🔐 **Zero-trust by default**  
+  Secrets are always encrypted client-side. Decrypted values never leave memory.
+
+- 🗝️ **Per-secret encryption keys**  
+  Each secret can use its own encryption key.
+
+- 🧠 **Session-based default key (optional)**  
+  Keep an encryption key in memory for repeated use during a session.
+
+- 🗂️ **Namespaced secrets**  
+  Organize secrets with paths like `db/prod/my-db`.
+
+- 🧭 **Interactive workflows**  
+  Secure prompts, interactive lists, clipboard integration.
+
+- 💻 **Cross-platform**  
+  Works on Linux, macOS, and Windows.
 
 ---
 
@@ -27,7 +43,9 @@ pip install rune
 
 ### Login / Logout
 
-Before performing any secret operations, you must be logged in. At this stage, login simply sets the active username:
+Before managing secrets, you must select an active user.
+
+At this stage, **login does not authenticate or unlock anything** — it simply sets the root namespace for secrets.
 
 ```bash
 # Log in as a user
@@ -37,137 +55,209 @@ rune login <username>
 rune logout
 ```
 
-> Note: Currently login only selects the active username which determines access to secret namespaces.
+> The active user determines which secrets are visible and writable.
 
 ---
 
-### Adding Secrets
+## Adding Secrets
 
 ```bash
 rune add db/prod/my-db -f host=localhost,port,user,password -k super-secret-key
 ```
 
-- Name of the secret. Supports namespaces using `/`.
-- `-f / --fields`
-    - Comma-separated list of fields. Fields without a value will be prompted securely.
-    - If ommitted, store a single-field secret.
-- `-k / --key` → Optional encryption key (prompted secretly if not specified)
+**Options:**
+- Secret names support namespaces using `/`
+- `--fields / -f`
+  - Comma-separated list of fields
+  - Fields without values are prompted securely
+  - If omitted entirely, Rune stores a single-field secret
+- `--key / -k`
+  - Encryption key (securely prompted if omitted)
 
 ---
 
-### Retrieving Secrets
+## Retrieving Secrets
 
 ```bash
 rune get db/prod/my-db
+```
 
-# result
-[1] localhost
+Example output:
+
+```text
+[1] host
 [2] port
 [3] user
 [4] password
 Choose a field to copy (q to cancel):
 ```
 
-- Copies a chosen field to the clipboard by default.
-- Use `--show` to display secret values in the terminal.
-- `--interactive` triggers an interactive list selection (shortcut for `rune ls -i`).
+- Selected values are copied to the clipboard by default
+- Use `--show` to display values in the terminal
+- Use `--interactive` to pick a secret from a list (`rune ls -i` shortcut)
 
 ---
 
-### Listing Secrets
+## Listing Secrets
 
 ```bash
 rune ls
 ```
 
-- Lists all secrets, organized by namespace.
-- Single-child namespaces are collapsed for cleaner display.
-- Use `<namespace>` argument to filter results.
-- Use `--interactive` to fetch a secret directly from the list.
-- Use `--show` to reveal values when in interactive mode.
+- Secrets are displayed as a namespace tree
+- Single-child namespaces are collapsed for readability
+- Supports filtering by namespace
+- Interactive mode allows direct retrieval
 
 ---
 
-### Updating Secrets
+## Updating Secrets
 
 ```bash
-rune update db/prod/my-db -f user=new-user,password
+rune update db/prod/my-db -f user=new-user,password,new_field=new
 ```
 
-- Updates existing fields or adds new ones.
-- Fields without a value will be prompted securely.
+- Updates existing fields
+- Adds new fields
+- Missing values are prompted securely
 
 ---
 
-### Moving Secrets
+## Moving Secrets
 
 ```bash
 rune move db/prod/my-db db/prod/cassandra
 ```
 
-- Moves a secret from one name to another.
+- Renames or relocates a secret within the namespace tree
 
 ---
 
-### Deleting Secrets
+## Deleting Secrets
 
 ```bash
 rune delete db/prod/cassandra
 ```
 
-- Removes a secret from the vault.
-- Use `--hard` to remove the secret from persistence.
-- When hard deleting secrets, encryption key is required.
+- By default, secrets are **soft-deleted** (hidden)
+- Use `--hard` to permanently delete
+- Hard deletes require the encryption key
+
+### Deleting Individual Fields
+
+```bash
+rune delete db/prod/cassandra -f password
+```
 
 ---
 
-### Restoring Secrets
+## Restoring Secrets
 
 ```bash
 rune restore db/prod/cassandra
 ```
 
-- Restores a soft-deleted secret to the vault.
+- Restores a soft-deleted secret
+- All soft-deleted fields are restored
 
 ---
 
+## Sessions (Default Encryption Key)
 
-### Configuration
+Sessions allow you to keep an encryption key in memory so you don’t have to re-enter it for every operation.
 
-Rune CLI supports configuring storage and encryption options:
+- The key lives **only in memory**
+- Stored in a local background daemon
+- Never written to disk
+- Communicated via a local TCP socket
+
+Sessions are **not accounts or master passwords**.  
+They are simply a convenience mechanism for repeated encryption operations.
+
+---
+
+### Starting a Session
 
 ```bash
-rune config show          # Display current config
-rune config storage       # Set storage options (local file path)
-rune config encryption    # Set encryption mode (currently `aesgcm`)
+rune session start --session-key <key>
 ```
 
-It also allows you to save and load profiles:
+- If the key is omitted, you’ll be prompted securely
+- A session TTL can be configured (or disabled)
+
+---
+
+### Ending a Session
 
 ```bash
-rune config profile save <profile-name>  # Save current settings to profile 
-rune config profile load <profile-name>  # Load a saved profile
-rune config profile list                 # Show saved profiles
+rune session end
 ```
 
+- Clears the session and removes the key from memory
+
+---
+
+### Session Status
+
+```bash
+rune session status
+```
+
+Displays:
+- Whether a session is active
+- Associated user
+- Remaining TTL (if any)
+
+---
+
+## Configuration
+
+### Show Current Configuration
+
+```bash
+rune config show
+```
+
+### Locate Important Files
+
+```bash
+rune config where
+```
+
+Shows where Rune stores:
+- Settings
+- Profiles
+- Secrets (local storage)
+
+---
+
+### Profiles
+
+Profiles allow you to save and switch between different configurations.
+
+```bash
+rune profile save <name>
+rune profile load <name>
+rune profile list
+```
 
 ---
 
 ## Storage & Encryption
 
-- Secrets are stored locally in JSON format (default).
-- Fully client-side encrypted. (Decrypted text never leaves memory)
-- Per-secret encryption keys are supported.
+- Secrets are stored locally (JSON filesystem by default)
+- Encryption is always client-side (decrypted secrets and encryption keys **NEVER** leave memory)
+- Encryption mode is configurable (currently `aesgcm`)
 
 ---
 
 ## Roadmap
 
-See [ROADMAP.md](./ROADMAP.md) for the full development roadmap.
+See [ROADMAP.md](./ROADMAP.md) for planned features and upcoming milestones.
 
 ---
 
 ## License
 
-Apache 2.0
+Apache License 2.0
 

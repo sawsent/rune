@@ -1,9 +1,9 @@
 [project]
 name = "rune"
 version = "0.8.0"
-description = "Rune is a cli credential manager for developers. Store, retrieve, update, and manage secrets securely and easily."
+description = "A local-first, client-side encrypted secrets manager for developers."
 authors = [{ name = "sawsent" }]
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
 
@@ -14,13 +14,28 @@ dependencies = [
     "cryptography>=41.0",
 ]
 
-keywords = ["password", "cli", "encryption", "secrets", "developer-tools", "security"]
+keywords = [
+    "secrets",
+    "encryption",
+    "cli",
+    "vault",
+    "credentials",
+    "security",
+    "developer-tools",
+    "devops",
+]
 
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+
     "License :: OSI Approved :: Apache Software License",
-    "Environment :: Console",
+
     "Topic :: Security :: Cryptography",
     "Topic :: Utilities",
 ]
@@ -28,12 +43,12 @@ classifiers = [
 [project.scripts]
 rune = "rune.bootstrap:main"
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project.urls]
 Homepage = "https://github.com/sawsent/rune"
 Repository = "https://github.com/sawsent/rune"
 Issues = "https://github.com/sawsent/rune/issues"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
