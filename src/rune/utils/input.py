@@ -64,7 +64,7 @@ def get_active_user() -> str | None:
 def ensure_active_user() -> str:
     maybe_user = get_active_user()
     if not maybe_user:
-        raise BadInputError("[bold red]User not set.[/] Please log in with [bold]`rune login -u <username>`[/]")
+        raise BadInputError("[bold red]User not set.[/] Please log in with [bold]`rune login <username>`[/]")
 
     return maybe_user
 

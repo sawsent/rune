@@ -7,7 +7,7 @@ from rune.utils.input import get_choice_by_idx
 from rune.utils import display
 
 def setup() -> Typer:
-    profile_app = Typer(name="profile", help="Manage configuration profiles. `rune profile -h` for more help.")
+    profile_app = Typer(name="profile", help="Manage configuration profiles. `rune config profile -h` for more help.")
 
     @profile_app.command(name="list")
     def list_profiles(

@@ -1,7 +1,6 @@
+# rune
 
-# Rune
-
-**Rune** is a secure, local-first secrets management CLI designed for developers.
+**rune** is a secure, local-first secrets management CLI designed for developers.
 
 It lets you store, retrieve, and manage secrets safely on your machine, with **strong client-side encryption**, a clean namespace model, and an ergonomic workflow optimized for daily use.
 
@@ -16,6 +15,9 @@ Rune is intentionally simple: no servers, no accounts, no background services be
 
 - 🗝️ **Per-secret encryption keys**  
   Each secret can use its own encryption key.
+
+- 🗝️ **Multi-field secret storage**  
+  Each secret can have multiple fields, allowing you to store complex secrets easily.
 
 - 🧠 **Session-based default key (optional)**  
   Keep an encryption key in memory for repeated use during a session.
@@ -105,7 +107,6 @@ rune ls
 ```
 
 - Secrets are displayed as a namespace tree
-- Single-child namespaces are collapsed for readability
 - Supports filtering by namespace
 - Interactive mode allows direct retrieval
 
@@ -210,8 +211,7 @@ Displays:
 
 ---
 
-## Configuration
-
+## Other commands
 ### Show Current Configuration
 
 ```bash
@@ -236,9 +236,9 @@ Shows where Rune stores:
 Profiles allow you to save and switch between different configurations.
 
 ```bash
-rune profile save <name>
-rune profile load <name>
-rune profile list
+rune config profile save <name>
+rune config profile load <name>
+rune config profile list
 ```
 
 ---

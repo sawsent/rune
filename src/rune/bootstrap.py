@@ -11,9 +11,11 @@ def main():
     secretcli.setup(app)
     usercli.setup(app)
 
-    app.add_typer(configcli.setup())
+    config_app = configcli.setup()
+    config_app.add_typer(profilecli.setup())
+
     app.add_typer(sessioncli.setup())
-    app.add_typer(profilecli.setup())
+    app.add_typer(config_app)
 
     try:
         Context.build()

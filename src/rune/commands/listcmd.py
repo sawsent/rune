@@ -1,30 +1,23 @@
 from typing import Dict, List
-from rich.console import Console
-from rich.panel import Panel
 import typer
 from rune.commands.getcmd import handle_get_command
 from rune.internal.listsecrets import list_secrets
-from rich.console import Console
 from rich.tree import Tree
+from rune.utils import display
 import typer
 
 import pyperclip
-
-console = Console()
 
 def handle_ls_command(user: str, namespace: str | None, interactive: bool, show: bool, show_deleted: bool, use_session_key: bool):
     result = list_secrets(user)
     secrets = result.value()
 
     if result.is_failure():
-        console.print(Panel.fit(
-            f"[bold red]Unable to retrieve secrets:[/] {result.failure_reason()}",
-            title="[red]Failed[/]",
-        ))
+        display.failed_panel(f"Unable to retrieve secrets: {result.failure_reason()}")
         return
 
     if not secrets:
-        console.print("[yellow]No secrets yet.[/]")
+        display.print("[yellow]No secrets yet.[/]")
         return
     
     if show_deleted:
@@ -41,7 +34,7 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
         full_names = [secret.full_name for secret in secrets if not secret.deleted]
 
     if not full_names:
-        console.print("[yellow]No secrets yet.[/]")
+        display.print("[yellow]No secrets yet.[/]")
         return
 
     names_tree = _build_namespace_tree(full_names)
@@ -52,19 +45,14 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
                 names_tree = names_tree.get(ns, {})
 
     if names_tree == {}:
-        console.print(f"[yellow]No secrets for namespace {namespace}.[/]")
+        display.print(f"[yellow]No secrets for namespace {namespace}.[/]")
         return
 
     compacted_tree = _compact_tree(names_tree)
 
     root = Tree(f"[bold]{user}/{namespace}/[/]" if namespace else f"[bold]{user}/[/]")
     indexes = _expand_rich_tree(root, compacted_tree)
-    console.print(
-        Panel.fit(
-            root,
-            title="[green]✓ Secrets Tree[/]"
-        )
-    )
+    display.print_tree(root)
 
     if interactive:
         while True:
@@ -77,7 +65,7 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
                 continue
             if idx in indexes:
                 fqn = (namespace or "").removeprefix("/").removesuffix("/").strip() + "/" + indexes[idx]
-                console.print(f"Fetching secret [bold]{fqn}[/]")
+                display.print(f"Fetching secret [bold]{fqn}[/]")
                 handle_get_command(user, _name=fqn, show=show, _key=None, show_deleted=show_deleted, use_session_key=use_session_key)
                 break
 
@@ -94,7 +82,7 @@ def handle_ls_command(user: str, namespace: str | None, interactive: bool, show:
                 fqn = (namespace or "").removeprefix("/").removesuffix("/").strip() + "/" + indexes[idx]
                 fqn = fqn.removeprefix("/").removesuffix("/").strip()
                 pyperclip.copy(fqn)
-                console.print(f"Copied secret name [bold]{fqn}[/] to clipboard.")
+                display.print(f"Copied secret name [bold]{fqn}[/] to clipboard.")
                 return
 
 def _build_namespace_tree(full_names: List[str]) -> Dict:

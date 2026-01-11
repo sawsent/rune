@@ -25,7 +25,7 @@ def setup() -> Typer:
     def start(
         _key: Annotated[
             Optional[str],
-            Option("--default-key", "-k", help=DEFAULT_KEY_HELP)
+            Option("--session-key", "-k", help=DEFAULT_KEY_HELP)
         ] = None,
         _ttl: Annotated[
             Optional[int],

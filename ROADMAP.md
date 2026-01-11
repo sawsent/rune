@@ -59,6 +59,21 @@
 - [x] Rune is useful daily as a local developer vault
 - [ ] Documentation (README) is up-to-date
 
+## Phase 2.5 — Interactive mode and unified style (v0.9.0)
+- [ ] Introduce interactive mode for all commands
+  - [ ] `rune add -i`
+  - [ ] `rune get -i`
+  - [ ] `rune delete -i`
+  - [ ] `rune restore -i`
+  - [ ] `rune update -i`
+- [ ] Define and concentrate output style
+- [ ] Use unified output style everywhere
+
+**Exit criteria**
+- [ ] Ergonomic UX
+- [ ] Rune is useful daily as a local developer vault
+- [ ] Documentation (README) is up-to-date
+
 
 ## Phase 3 — Data Model Hardening and unit testing (v1.0.0)
 - [ ] Secret IDs as primary identifiers
